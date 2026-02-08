@@ -93,13 +93,31 @@ export async function insertBooks(books: ScrapedBook[]): Promise<{ saved: number
 /**
  * Get books that haven't been evaluated yet.
  */
-export async function getPendingBooks(limit: number = 500): Promise<EbayBook[]> {
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select('*')
-    .is('decision', null)
-    .order('scraped_at', { ascending: true })
-    .limit(limit);
+export async function getPendingBooks(): Promise<EbayBook[]> {
+  const allPending: EbayBook[] = [];
+  let from = 0;
+  const pageSize = 1000;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from(TABLE)
+      .select('*')
+      .is('decision', null)
+      .order('scraped_at', { ascending: true })
+      .range(from, from + pageSize - 1);
+
+    if (error) {
+      console.error('Error fetching pending books:', error.message);
+      break;
+    }
+
+    if (!data || data.length === 0) break;
+    allPending.push(...data);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return allPending;
 
   if (error) {
     console.error('Error fetching pending books:', error.message);

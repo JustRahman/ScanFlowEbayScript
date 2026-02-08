@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { SELLERS, CATEGORIES } from './config.js';
 import { scrapeAllListings } from './ebayApi.js';
-import { getExistingISBNs, insertBooks } from './supabase.js';
+import { getExistingISBNs, insertBooks, getCheckpoint, saveCheckpoint, resetCheckpoint } from './supabase.js';
 import { evaluatePendingBooks } from './evaluate.js';
 
 async function main() {
@@ -20,6 +20,11 @@ async function main() {
       console.log(`  Category: ${cat.name} (${cat.id})`);
 
       try {
+        const startOffset = await getCheckpoint(seller, cat.id);
+        if (startOffset > 0) {
+          console.log(`    Resuming from page ${startOffset / 200 + 1} (offset ${startOffset})`);
+        }
+
         const result = await scrapeAllListings(
           seller,
           cat.id,
@@ -31,7 +36,16 @@ async function main() {
             totalNew += insertResult.saved;
             totalSkipped += insertResult.duplicates;
           },
+          startOffset,
+          async (nextOffset) => {
+            await saveCheckpoint(seller, cat.id, nextOffset);
+          },
         );
+
+        if (result.completed) {
+          await resetCheckpoint(seller, cat.id);
+          console.log(`    Checkpoint reset — full catalog scraped`);
+        }
 
         console.log(`  ${cat.name} done: ${result.totalScraped} scraped, ${result.totalWithISBN} with ISBN, ${result.totalNew} new`);
       } catch (error) {

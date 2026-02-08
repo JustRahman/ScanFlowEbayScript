@@ -118,13 +118,6 @@ export async function getPendingBooks(): Promise<EbayBook[]> {
   }
 
   return allPending;
-
-  if (error) {
-    console.error('Error fetching pending books:', error.message);
-    return [];
-  }
-
-  return data || [];
 }
 
 /**
@@ -156,4 +149,55 @@ export async function updateBookEvaluation(isbn: string, evaluation: {
   }
 
   return true;
+}
+
+// ── Checkpoint functions for resumable scraping ──
+
+const CHECKPOINT_TABLE = 'fetcher_checkpoints';
+
+/**
+ * Get the last saved offset for a seller+category, or 0 if none.
+ */
+export async function getCheckpoint(seller: string, categoryId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from(CHECKPOINT_TABLE)
+    .select('last_offset')
+    .eq('seller', seller)
+    .eq('category_id', categoryId)
+    .single();
+
+  if (error || !data) return 0;
+  return data.last_offset;
+}
+
+/**
+ * Save (upsert) the current scraping offset for a seller+category.
+ */
+export async function saveCheckpoint(seller: string, categoryId: string, offset: number): Promise<void> {
+  const { error } = await supabase
+    .from(CHECKPOINT_TABLE)
+    .upsert(
+      { seller, category_id: categoryId, last_offset: offset, updated_at: new Date().toISOString() },
+      { onConflict: 'seller,category_id' }
+    );
+
+  if (error) {
+    console.error(`  Checkpoint save error: ${error.message}`);
+  }
+}
+
+/**
+ * Reset checkpoint to 0 (full catalog scraped).
+ */
+export async function resetCheckpoint(seller: string, categoryId: string): Promise<void> {
+  const { error } = await supabase
+    .from(CHECKPOINT_TABLE)
+    .upsert(
+      { seller, category_id: categoryId, last_offset: 0, updated_at: new Date().toISOString() },
+      { onConflict: 'seller,category_id' }
+    );
+
+  if (error) {
+    console.error(`  Checkpoint reset error: ${error.message}`);
+  }
 }

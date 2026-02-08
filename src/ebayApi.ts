@@ -252,15 +252,18 @@ export async function scrapeAllListings(
   categoryId: string,
   existingISBNs: Set<string>,
   onPageDone: (books: ScrapedBook[], pageNum: number) => Promise<void>,
-): Promise<{ totalScraped: number; totalWithISBN: number; totalNew: number; detailFetches: number }> {
+  startOffset: number = 0,
+  onPageProcessed?: (nextOffset: number) => Promise<void>,
+): Promise<{ totalScraped: number; totalWithISBN: number; totalNew: number; detailFetches: number; completed: boolean }> {
   const PAGE_SIZE = 200;
-  let offset = 0;
-  let pageNum = 0;
+  let offset = startOffset;
+  let pageNum = startOffset / PAGE_SIZE;
   let totalScraped = 0;
   let totalWithISBN = 0;
   let totalNew = 0;
   let detailFetches = 0;
   let consecutiveErrors = 0;
+  let completed = false;
 
   const token = await getOAuthToken();
 
@@ -324,11 +327,14 @@ export async function scrapeAllListings(
     consecutiveErrors = 0;
 
     const items: EbayItem[] = searchData.itemSummaries || [];
-    if (items.length === 0) break;
+    if (items.length === 0) {
+      completed = true;
+      break;
+    }
 
     totalScraped += items.length;
 
-    if (pageNum === 1) {
+    if (totalScraped === items.length) {
       console.log(`    Total results: ~${searchData.total || 'unknown'}`);
     }
 
@@ -419,15 +425,23 @@ export async function scrapeAllListings(
       }
     }
 
+    // Save checkpoint after each page
+    offset += PAGE_SIZE;
+    if (onPageProcessed) {
+      await onPageProcessed(offset);
+    }
+
     // Stop entirely if rate limited
     if (rateLimited) break;
 
-    // Stop if we got fewer than a full page
-    if (items.length < PAGE_SIZE) break;
+    // Stop if we got fewer than a full page (natural end)
+    if (items.length < PAGE_SIZE) {
+      completed = true;
+      break;
+    }
 
-    offset += PAGE_SIZE;
     await sleep(300);
   }
 
-  return { totalScraped, totalWithISBN, totalNew, detailFetches };
+  return { totalScraped, totalWithISBN, totalNew, detailFetches, completed };
 }

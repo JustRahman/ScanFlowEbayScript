@@ -31,6 +31,7 @@ async function main() {
         const result = await scrapeAllListings(
           seller,
           cat.id,
+          cat.query || '',
           existingISBNs,
           async (books, pageNum) => {
             // Insert this page's books to DB immediately

@@ -1,7 +1,7 @@
 export const SELLERS = ['thrift.books'];
 
 export const CATEGORIES = [
-  { id: '2228', name: 'Textbooks' },
+  { id: '2228', name: 'Textbooks', query: 'textbook' },
 ];
 
 // Price range in cents

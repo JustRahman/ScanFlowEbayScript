@@ -1,4 +1,4 @@
-export const SELLERS = ['booksrun'];
+export const SELLERS = ['thrift.books'];
 
 export const CATEGORIES = [
   { id: '2228', name: 'Textbooks' },

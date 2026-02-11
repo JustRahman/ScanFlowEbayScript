@@ -274,7 +274,7 @@ export async function scrapeAllListings(
     `sellers:{${seller}}`,
     `price:[${minPriceDollars}..${maxPriceDollars}]`,
     'priceCurrency:USD',
-    'conditionIds:{4000}', // Very Good only
+    'conditionIds:{3000}', // Like New
     'buyingOptions:{FIXED_PRICE}',
   ].join(',');
 
@@ -399,7 +399,7 @@ export async function scrapeAllListings(
         isbn,
         title: item.title,
         price: priceCents,
-        condition: item.condition || 'Very Good',
+        condition: item.condition || 'Like New',
         seller,
         category: categoryId,
         ebay_item_id: item.itemId,

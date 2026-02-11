@@ -249,8 +249,7 @@ async function fetchItemDetail(itemId: string): Promise<EbayItem | null> {
 
 export async function scrapeAllListings(
   seller: string,
-  categoryId: string,
-  query: string = '',
+  searchQuery: string,
   existingISBNs: Set<string>,
   onPageDone: (books: ScrapedBook[], pageNum: number) => Promise<void>,
   startOffset: number = 0,
@@ -284,14 +283,13 @@ export async function scrapeAllListings(
 
     // Step 1: Search page
     const searchParams: Record<string, string> = {
-      category_ids: categoryId,
+      q: searchQuery,
       limit: String(PAGE_SIZE),
       offset: String(offset),
       filter: filters,
       sort: 'newlyListed',
       fieldgroups: 'EXTENDED',
     };
-    if (query) searchParams.q = query;
     const params = new URLSearchParams(searchParams);
 
     const searchUrl = `${EBAY_BROWSE_URL}/item_summary/search?${params.toString()}`;
@@ -403,7 +401,7 @@ export async function scrapeAllListings(
         price: priceCents,
         condition: item.condition || 'Like New',
         seller,
-        category: categoryId,
+        category: searchQuery,
         ebay_item_id: item.itemId,
         ebay_url: item.itemAffiliateWebUrl || item.itemWebUrl,
         image_url: item.image?.imageUrl || null,

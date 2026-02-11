@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { SELLERS, CATEGORIES } from './config.js';
+import { SELLERS, SEARCHES } from './config.js';
 import { scrapeAllListings } from './ebayApi.js';
 import { getExistingISBNs, insertBooks, getCheckpoint, saveCheckpoint, resetCheckpoint } from './supabase.js';
 import { evaluatePendingBooks } from './evaluate.js';
@@ -19,22 +19,20 @@ async function main() {
   for (const seller of SELLERS) {
     console.log(`\nSeller: ${seller}`);
 
-    for (const cat of CATEGORIES) {
-      console.log(`  Category: ${cat.name} (${cat.id})`);
+    for (const search of SEARCHES) {
+      console.log(`  Search: ${search.name} ("${search.query}")`);
 
       try {
-        const startOffset = await getCheckpoint(seller, cat.id);
+        const startOffset = await getCheckpoint(seller, search.query);
         if (startOffset > 0) {
           console.log(`    Resuming from page ${startOffset / 200 + 1} (offset ${startOffset})`);
         }
 
         const result = await scrapeAllListings(
           seller,
-          cat.id,
-          cat.query || '',
+          search.query,
           existingISBNs,
           async (books, pageNum) => {
-            // Insert this page's books to DB immediately
             const insertResult = await insertBooks(books);
             console.log(`      → Inserted ${insertResult.saved}, ${insertResult.duplicates} dups, ${insertResult.errors} errors`);
             totalNew += insertResult.saved;
@@ -42,18 +40,18 @@ async function main() {
           },
           startOffset,
           async (nextOffset) => {
-            await saveCheckpoint(seller, cat.id, nextOffset);
+            await saveCheckpoint(seller, search.query, nextOffset);
           },
         );
 
         if (result.completed) {
-          await resetCheckpoint(seller, cat.id);
-          console.log(`    Checkpoint reset — full catalog scraped`);
+          await resetCheckpoint(seller, search.query);
+          console.log(`    Checkpoint reset — full results scraped`);
         }
 
-        console.log(`  ${cat.name} done: ${result.totalScraped} scraped, ${result.totalWithISBN} with ISBN, ${result.totalNew} new`);
+        console.log(`  ${search.name} done: ${result.totalScraped} scraped, ${result.totalWithISBN} with ISBN, ${result.totalNew} new`);
       } catch (error) {
-        console.error(`  ${cat.name}: ERROR -`, error instanceof Error ? error.message : error);
+        console.error(`  ${search.name}: ERROR -`, error instanceof Error ? error.message : error);
       }
     }
   }

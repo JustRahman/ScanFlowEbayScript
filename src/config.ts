@@ -1,7 +1,14 @@
 export const SELLERS = ['thrift.books'];
 
-export const CATEGORIES = [
-  { id: '2228', name: 'Textbooks', query: 'textbook' },
+export const SEARCHES = [
+  { query: 'textbook', name: 'Textbook' },
+  { query: 'textbook medicine', name: 'Textbook Medicine' },
+  { query: 'textbook nursing', name: 'Textbook Nursing' },
+  { query: 'textbook psychology', name: 'Textbook Psychology' },
+  { query: 'textbook engineering', name: 'Textbook Engineering' },
+  { query: 'textbook biology', name: 'Textbook Biology' },
+  { query: 'textbook chemistry', name: 'Textbook Chemistry' },
+  { query: 'textbook computer science', name: 'Textbook Computer Science' },
 ];
 
 // Price range in cents

@@ -283,7 +283,6 @@ export async function scrapeAllListings(
 
     // Step 1: Search page
     const params = new URLSearchParams({
-      q: '',
       category_ids: categoryId,
       limit: String(PAGE_SIZE),
       offset: String(offset),

@@ -492,9 +492,9 @@ export function evaluateBook(
                       metrics.avgSalesRank < DECISION.REVIEW.MAX_SALES_RANK &&
                       metrics.salesRankDrops90 >= DECISION.REVIEW.MIN_DROPS_90;
 
-  // High-profit exception: FBM profit >= $60, rank < 1M, drops >= 10
-  const isHighProfit = result.fbmProfit !== null &&
-                       result.fbmProfit >= DECISION.BUY.HIGH_PROFIT_MIN_FBM &&
+  // High-profit exception: gross profit (amazonPrice - buyPrice) >= $60, rank < 1M, drops >= 10
+  const grossProfit = amazonPrice - buyPriceDollars;
+  const isHighProfit = grossProfit >= DECISION.BUY.HIGH_PROFIT_MIN_FBM &&
                        metrics.avgSalesRank < DECISION.BUY.HIGH_PROFIT_MAX_RANK &&
                        metrics.salesRankDrops90 >= DECISION.BUY.HIGH_PROFIT_MIN_DROPS;
 
@@ -503,7 +503,7 @@ export function evaluateBook(
   if (meetsBuy || isHighProfit) {
     result.decision = 'BUY';
     result.reason = isHighProfit
-      ? `${metricsStr} | HIGH_PROFIT FBM $${result.fbmProfit!.toFixed(0)}`
+      ? `${metricsStr} | HIGH_PROFIT $${grossProfit.toFixed(0)}`
       : metricsStr;
   } else if (meetsReview) {
     result.decision = 'REVIEW';

@@ -274,7 +274,6 @@ export async function scrapeAllListings(
     `sellers:{${seller}}`,
     `price:[${minPriceDollars}..${maxPriceDollars}]`,
     'priceCurrency:USD',
-    'conditionIds:{3000}', // Like New
     'buyingOptions:{FIXED_PRICE}',
   ].join(',');
 
@@ -328,6 +327,10 @@ export async function scrapeAllListings(
 
     const items: EbayItem[] = searchData.itemSummaries || [];
     if (items.length === 0) {
+      if (pageNum === 1 || (startOffset === 0 && offset === 0)) {
+        console.log(`    0 results. Filter: ${filters}`);
+        console.log(`    Response: ${JSON.stringify(searchData).substring(0, 300)}`);
+      }
       completed = true;
       break;
     }

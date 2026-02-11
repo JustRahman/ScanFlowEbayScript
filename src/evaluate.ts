@@ -48,17 +48,25 @@ export async function evaluatePendingBooks(): Promise<{
     const fbmProfitCents = result.fbmProfit != null ? Math.round(result.fbmProfit * 100) : undefined;
     const weightOz = result.weightLbs != null ? Math.round(result.weightLbs * 16 * 10) / 10 : undefined;
 
+    // Guard against numeric overflow for DB integer columns
+    const safeInt = (v: number | null | undefined): number | undefined => {
+      if (v == null || !Number.isFinite(v)) return undefined;
+      const rounded = Math.round(v);
+      if (rounded > 2_000_000_000 || rounded < -2_000_000_000) return undefined;
+      return rounded;
+    };
+
     await updateBookEvaluation(book.isbn, {
       decision: result.decision,
       asin: result.asin,
-      amazon_price: amazonPriceCents,
-      sales_rank: result.salesRank != null ? Math.round(result.salesRank) : undefined,
-      sales_rank_drops_90: result.salesRankDrops90,
-      fba_profit: fbaProfitCents,
-      fbm_profit: fbmProfitCents,
+      amazon_price: safeInt(amazonPriceCents),
+      sales_rank: safeInt(result.salesRank),
+      sales_rank_drops_90: safeInt(result.salesRankDrops90),
+      fba_profit: safeInt(fbaProfitCents),
+      fbm_profit: safeInt(fbmProfitCents),
       amazon_flag: result.amazonFlag ?? undefined,
       book_type: result.binding ?? undefined,
-      weight_oz: weightOz,
+      weight_oz: weightOz != null && Number.isFinite(weightOz) ? weightOz : undefined,
     });
 
     if (result.decision === 'BUY') buy++;

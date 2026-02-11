@@ -23,7 +23,7 @@ async function main() {
       console.log(`  Search: ${search.name} ("${search.query}")`);
 
       try {
-        const startOffset = await getCheckpoint(seller, search.query);
+        const startOffset = await getCheckpoint(seller, search.key);
         if (startOffset > 0) {
           console.log(`    Resuming from page ${startOffset / 200 + 1} (offset ${startOffset})`);
         }
@@ -40,12 +40,12 @@ async function main() {
           },
           startOffset,
           async (nextOffset) => {
-            await saveCheckpoint(seller, search.query, nextOffset);
+            await saveCheckpoint(seller, search.key, nextOffset);
           },
         );
 
         if (result.completed) {
-          await resetCheckpoint(seller, search.query);
+          await resetCheckpoint(seller, search.key);
           console.log(`    Checkpoint reset — full results scraped`);
         }
 

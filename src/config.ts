@@ -1,14 +1,14 @@
 export const SELLERS = ['thrift.books'];
 
 export const SEARCHES = [
-  { query: 'textbook', name: 'Textbook' },
-  { query: 'textbook medicine', name: 'Textbook Medicine' },
-  { query: 'textbook nursing', name: 'Textbook Nursing' },
-  { query: 'textbook psychology', name: 'Textbook Psychology' },
-  { query: 'textbook engineering', name: 'Textbook Engineering' },
-  { query: 'textbook biology', name: 'Textbook Biology' },
-  { query: 'textbook chemistry', name: 'Textbook Chemistry' },
-  { query: 'textbook computer science', name: 'Textbook Computer Science' },
+  { key: 'txt', query: 'textbook', name: 'Textbook' },
+  { key: 'txt-med', query: 'textbook medicine', name: 'Textbook Medicine' },
+  { key: 'txt-nur', query: 'textbook nursing', name: 'Textbook Nursing' },
+  { key: 'txt-psy', query: 'textbook psychology', name: 'Textbook Psychology' },
+  { key: 'txt-eng', query: 'textbook engineering', name: 'Textbook Engineering' },
+  { key: 'txt-bio', query: 'textbook biology', name: 'Textbook Biology' },
+  { key: 'txt-chm', query: 'textbook chemistry', name: 'Textbook Chemistry' },
+  { key: 'txt-cs', query: 'textbook computer science', name: 'Textbook Computer Science' },
 ];
 
 // Price range in cents

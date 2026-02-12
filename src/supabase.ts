@@ -37,30 +37,34 @@ export interface EbayBook {
 
 /**
  * Load all existing ISBNs from DB (paginated) into a Set for dedup.
+ * Checks both ebay_books and secondsale_books tables.
  */
 export async function getExistingISBNs(): Promise<Set<string>> {
   const isbns = new Set<string>();
-  let from = 0;
-  const pageSize = 1000;
 
-  while (true) {
-    const { data, error } = await supabase
-      .from(TABLE)
-      .select('isbn')
-      .range(from, from + pageSize - 1);
+  for (const table of [TABLE, 'secondsale_books']) {
+    let from = 0;
+    const pageSize = 1000;
 
-    if (error) {
-      console.error('Error loading existing ISBNs:', error.message);
-      break;
+    while (true) {
+      const { data, error } = await supabase
+        .from(table)
+        .select('isbn')
+        .range(from, from + pageSize - 1);
+
+      if (error) {
+        console.error(`Error loading existing ISBNs from ${table}:`, error.message);
+        break;
+      }
+
+      if (!data || data.length === 0) break;
+      data.forEach((row: { isbn: string }) => isbns.add(row.isbn));
+      from += pageSize;
+      if (data.length < pageSize) break;
     }
-
-    if (!data || data.length === 0) break;
-    data.forEach((row: { isbn: string }) => isbns.add(row.isbn));
-    from += pageSize;
-    if (data.length < pageSize) break;
   }
 
-  console.log(`Loaded ${isbns.size} existing ISBNs from DB`);
+  console.log(`Loaded ${isbns.size} existing ISBNs from DB (ebay_books + secondsale_books)`);
   return isbns;
 }
 
@@ -135,12 +139,15 @@ export async function updateBookEvaluation(isbn: string, evaluation: {
   book_type?: string;
   weight_oz?: number;
 }): Promise<boolean> {
+  // Strip undefined values to avoid sending nulls for fields we don't want to update
+  const cleanEval: Record<string, unknown> = { evaluated_at: new Date().toISOString() };
+  for (const [key, value] of Object.entries(evaluation)) {
+    if (value !== undefined) cleanEval[key] = value;
+  }
+
   const { error } = await supabase
     .from(TABLE)
-    .update({
-      ...evaluation,
-      evaluated_at: new Date().toISOString(),
-    })
+    .update(cleanEval)
     .eq('isbn', isbn);
 
   if (error) {

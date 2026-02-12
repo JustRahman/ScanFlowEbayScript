@@ -274,7 +274,7 @@ export async function scrapeAllListings(
     `sellers:{${seller}}`,
     `price:[${minPriceDollars}..${maxPriceDollars}]`,
     'priceCurrency:USD',
-    'conditionIds:{3000}',
+    'conditionIds:{4000}',
     'buyingOptions:{FIXED_PRICE}',
   ].join(',');
 
@@ -284,6 +284,7 @@ export async function scrapeAllListings(
     // Step 1: Search page
     const searchParams: Record<string, string> = {
       q: searchQuery,
+      category_ids: '267',
       limit: String(PAGE_SIZE),
       offset: String(offset),
       filter: filters,
@@ -399,11 +400,14 @@ export async function scrapeAllListings(
         ? Math.round(parseFloat(item.shippingOptions[0].shippingCost.value) * 100)
         : 0;
 
+      const condition = item.condition || 'Very Good';
+      console.log(`      + ${isbn} | $${(priceCents/100).toFixed(2)} + $${(shippingCents/100).toFixed(2)} ship | ${condition} | ${item.title.substring(0, 50)}`);
+
       booksFromPage.push({
         isbn,
         title: item.title,
         price: priceCents,
-        condition: item.condition || 'Like New',
+        condition,
         seller,
         category: searchQuery,
         ebay_item_id: item.itemId,

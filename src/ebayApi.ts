@@ -274,6 +274,7 @@ export async function scrapeAllListings(
     `sellers:{${seller}}`,
     `price:[${minPriceDollars}..${maxPriceDollars}]`,
     'priceCurrency:USD',
+    'conditionIds:{3000}',
     'buyingOptions:{FIXED_PRICE}',
   ].join(',');
 

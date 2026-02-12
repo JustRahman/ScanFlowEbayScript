@@ -164,6 +164,31 @@ export function validateIsbn(isbn: string): { valid: boolean; error?: string } {
 
 // ── Keepa API ──
 
+const MIN_KEEPA_TOKENS = 100;
+
+export async function waitForKeepaTokens(): Promise<void> {
+  if (!KEEPA_API_KEY) return;
+
+  const url = `${KEEPA_API_BASE}/token?key=${KEEPA_API_KEY}`;
+  try {
+    const response = await fetch(url);
+    const data: { tokensLeft: number } = await response.json();
+    let tokens = data.tokensLeft;
+
+    while (tokens < MIN_KEEPA_TOKENS) {
+      console.log(`  Keepa tokens: ${tokens} < ${MIN_KEEPA_TOKENS}. Waiting 60s for refill...`);
+      await new Promise(r => setTimeout(r, 60000));
+      const res = await fetch(url);
+      const d: { tokensLeft: number } = await res.json();
+      tokens = d.tokensLeft;
+    }
+
+    console.log(`  Keepa tokens available: ${tokens}`);
+  } catch (e) {
+    console.log('  Could not check Keepa tokens, continuing...');
+  }
+}
+
 export async function getProductByIsbn(isbn: string): Promise<KeepaProductRaw | null> {
   if (!KEEPA_API_KEY) {
     console.error('Keepa API key not configured');

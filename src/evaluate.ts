@@ -1,5 +1,5 @@
 import { KEEPA_DELAY_MS } from './config.js';
-import { getProductByIsbn, evaluateBook } from './keepaApi.js';
+import { getProductByIsbn, evaluateBook, waitForKeepaTokens } from './keepaApi.js';
 import { getPendingBooks, updateBookEvaluation } from './supabase.js';
 
 function sleep(ms: number): Promise<void> {
@@ -16,6 +16,10 @@ export async function evaluatePendingBooks(): Promise<{
   const pending = await getPendingBooks();
   console.log(`\nEvaluating ${pending.length} pending books...`);
 
+  if (pending.length > 0) {
+    await waitForKeepaTokens();
+  }
+
   let evaluated = 0;
   let buy = 0;
   let review = 0;
@@ -23,6 +27,7 @@ export async function evaluatePendingBooks(): Promise<{
   let noData = 0;
 
   for (const book of pending) {
+    await waitForKeepaTokens();
     const raw = await getProductByIsbn(book.isbn);
 
     if (!raw) {

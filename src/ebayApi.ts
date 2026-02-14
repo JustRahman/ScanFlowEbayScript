@@ -274,7 +274,7 @@ export async function scrapeAllListings(
     `sellers:{${seller}}`,
     `price:[${minPriceDollars}..${maxPriceDollars}]`,
     'priceCurrency:USD',
-    'conditionIds:{3000}',
+    'conditionIds:{4000}',
     'buyingOptions:{FIXED_PRICE}',
   ].join(',');
 
@@ -400,7 +400,7 @@ export async function scrapeAllListings(
         ? Math.round(parseFloat(item.shippingOptions[0].shippingCost.value) * 100)
         : 0;
 
-      const condition = item.condition || 'Like New';
+      const condition = item.condition || 'Very Good';
       console.log(`      + ${isbn} | $${(priceCents/100).toFixed(2)} + $${(shippingCents/100).toFixed(2)} ship | ${condition} | ${item.title.substring(0, 50)}`);
 
       booksFromPage.push({

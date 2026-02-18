@@ -1,4 +1,4 @@
-export const SELLERS = ['second.sale'];
+export const SELLERS = ['booksrun'];
 
 export const SEARCHES = [
   { key: 'txt', query: 'textbook', name: 'Textbook' },

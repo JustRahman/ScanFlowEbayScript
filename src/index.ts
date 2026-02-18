@@ -7,15 +7,12 @@ import { evaluatePendingBooks } from './evaluate.js';
 async function main() {
   console.log('=== ScanFlow Fetcher ===\n');
 
-  // Step 1: Evaluate pending books (decision = NULL) via Keepa
-  const evalResult = await evaluatePendingBooks();
-
-  // Step 2: Load existing ISBNs for dedup
+  // Step 1: Load existing ISBNs for dedup
   const existingISBNs = await getExistingISBNs();
   let totalNew = 0;
   let totalSkipped = 0;
 
-  // Step 3: Scrape all sellers × categories
+  // Step 2: Scrape all sellers × categories
   for (const seller of SELLERS) {
     console.log(`\nSeller: ${seller}`);
 
@@ -57,6 +54,9 @@ async function main() {
   }
 
   console.log(`\nScraping complete: ${totalNew} new books inserted, ${totalSkipped} skipped`);
+
+  // Step 3: Evaluate pending books (decision = NULL) via Keepa
+  const evalResult = await evaluatePendingBooks();
 
   // Step 4: Summary
   console.log('\n=== Summary ===');

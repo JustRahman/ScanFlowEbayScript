@@ -411,7 +411,7 @@ export async function scrapeAllListings(
         seller,
         category: searchQuery,
         ebay_item_id: item.itemId,
-        ebay_url: item.itemAffiliateWebUrl || item.itemWebUrl,
+        ebay_url: item.itemAffiliateWebUrl || `https://www.ebay.com/itm/${item.itemId}?mkcid=1&mkrid=711-53200-19255-0&siteid=0&campid=${EPN_CAMPAIGN_ID}&toolid=10001&customid=scanflow`,
         image_url: item.image?.imageUrl || null,
         shipping: shippingCents,
         scraped_at: now,

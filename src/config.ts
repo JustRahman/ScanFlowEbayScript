@@ -44,7 +44,7 @@ const SELLER_MAP: Record<string, SellerConfig> = {
   },
   bwb: {
     ebayName: 'betterworldbooks',
-    conditionId: '3000', // Like New
+    conditionId: '2750', // Like New
     evalBatchSize: 2000,
     searches: [
       { key: 'edu', query: '', categoryId: '2228', name: 'Textbooks, Education & Reference' },

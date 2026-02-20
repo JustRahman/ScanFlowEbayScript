@@ -58,7 +58,7 @@ async function main() {
         // Evaluate pending books after each batch
         if (batchNew > 0) {
           console.log(`\n    --- Evaluating pending books ---`);
-          const evalResult = await evaluatePendingBooks();
+          const evalResult = await evaluatePendingBooks(SELLER);
           totalEval.evaluated += evalResult.evaluated;
           totalEval.buy += evalResult.buy;
           totalEval.review += evalResult.review;

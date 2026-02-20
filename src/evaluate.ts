@@ -6,14 +6,14 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export async function evaluatePendingBooks(): Promise<{
+export async function evaluatePendingBooks(seller?: string): Promise<{
   evaluated: number;
   buy: number;
   review: number;
   reject: number;
   noData: number;
 }> {
-  const pending = await getPendingBooks();
+  const pending = await getPendingBooks(seller);
   console.log(`\nEvaluating ${pending.length} pending books...`);
 
   if (pending.length > 0) {

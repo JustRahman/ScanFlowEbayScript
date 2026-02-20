@@ -26,10 +26,9 @@ const SELLER_MAP: Record<string, SellerConfig> = {
   },
   thriftbooks: {
     ebayName: 'thriftbooks.store',
-    conditionId: '3000', // Like New
+    conditionId: '2750', // Like New
     evalBatchSize: 1500,
     searches: [
-      { key: 'edu', query: '', categoryId: '2228', name: 'Textbooks, Education & Reference' },
       { key: 'all', query: '', categoryId: '267', name: 'All Books' },
     ],
   },

@@ -34,7 +34,7 @@ const SELLER_MAP: Record<string, SellerConfig> = {
   },
   oneplanetbook: {
     ebayName: 'oneplanetbooks',
-    conditionId: '3000', // Like New
+    conditionId: '2750', // Like New
     evalBatchSize: 1000,
     searches: [
       { key: 'edu', query: '', categoryId: '2228', name: 'Textbooks, Education & Reference' },

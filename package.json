@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "tsx src/index.ts"
+    "start": "tsx src/index.ts",
+    "ebay-auth": "tsx scripts/ebay-auth.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",

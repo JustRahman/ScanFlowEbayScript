@@ -1,71 +1,87 @@
 import 'dotenv/config';
-import { SELLERS, SEARCHES } from './config.js';
+import { SELLER, CONDITION_ID, EVAL_BATCH_SIZE, SEARCHES } from './config.js';
 import { scrapeAllListings } from './ebayApi.js';
-import { getExistingISBNs, insertBooks, getCheckpoint, saveCheckpoint, resetCheckpoint } from './supabase.js';
+import { getExistingISBNs, insertBooks, getCheckpoint, saveCheckpoint } from './supabase.js';
 import { evaluatePendingBooks } from './evaluate.js';
 
 async function main() {
   console.log('=== ScanFlow Fetcher ===\n');
 
-  // Step 1: Load existing ISBNs for dedup
   const existingISBNs = await getExistingISBNs();
   let totalNew = 0;
   let totalSkipped = 0;
+  let totalEval = { evaluated: 0, buy: 0, review: 0, reject: 0, noData: 0 };
 
-  // Step 2: Scrape all sellers × categories
-  for (const seller of SELLERS) {
-    console.log(`\nSeller: ${seller}`);
+  console.log(`\nSeller: ${SELLER} (condition: ${CONDITION_ID}, eval every ${EVAL_BATCH_SIZE} new books)`);
 
-    for (const search of SEARCHES) {
-      console.log(`  Search: ${search.name} ("${search.query}")`);
+  for (const search of SEARCHES) {
+    console.log(`\n  Search: ${search.name} [cat:${search.categoryId}]`);
+
+    let searchDone = false;
+
+    while (!searchDone) {
+      const startOffset = await getCheckpoint(SELLER, search.key);
+      if (startOffset > 0) {
+        console.log(`    Resuming from offset ${startOffset}`);
+      }
 
       try {
-        const startOffset = await getCheckpoint(seller, search.key);
-        if (startOffset > 0) {
-          console.log(`    Resuming from page ${startOffset / 200 + 1} (offset ${startOffset})`);
-        }
+        let batchNew = 0;
 
         const result = await scrapeAllListings(
-          seller,
+          SELLER,
           search.query,
           existingISBNs,
-          async (books, pageNum) => {
+          async (books) => {
             const insertResult = await insertBooks(books);
             console.log(`      → Inserted ${insertResult.saved}, ${insertResult.duplicates} dups, ${insertResult.errors} errors`);
             totalNew += insertResult.saved;
+            batchNew += insertResult.saved;
             totalSkipped += insertResult.duplicates;
           },
           startOffset,
           async (nextOffset) => {
-            await saveCheckpoint(seller, search.key, nextOffset);
+            await saveCheckpoint(SELLER, search.key, nextOffset);
           },
+          search.categoryId,
+          CONDITION_ID,
+          EVAL_BATCH_SIZE,
         );
 
+        console.log(`    Batch: ${result.totalScraped} scraped, ${result.totalNew} new`);
+
         if (result.completed) {
-          await resetCheckpoint(seller, search.key);
-          console.log(`    Checkpoint reset — full results scraped`);
+          console.log(`    ${search.name} — reached end of results`);
+          searchDone = true;
         }
 
-        console.log(`  ${search.name} done: ${result.totalScraped} scraped, ${result.totalWithISBN} with ISBN, ${result.totalNew} new`);
+        // Evaluate pending books after each batch
+        if (batchNew > 0) {
+          console.log(`\n    --- Evaluating pending books ---`);
+          const evalResult = await evaluatePendingBooks();
+          totalEval.evaluated += evalResult.evaluated;
+          totalEval.buy += evalResult.buy;
+          totalEval.review += evalResult.review;
+          totalEval.reject += evalResult.reject;
+          totalEval.noData += evalResult.noData;
+          console.log(`    --- Eval done: ${evalResult.buy} BUY, ${evalResult.review} REVIEW, ${evalResult.reject} REJECT ---\n`);
+        } else {
+          searchDone = true;
+        }
       } catch (error) {
         console.error(`  ${search.name}: ERROR -`, error instanceof Error ? error.message : error);
+        searchDone = true;
       }
     }
   }
 
-  console.log(`\nScraping complete: ${totalNew} new books inserted, ${totalSkipped} skipped`);
-
-  // Step 3: Evaluate pending books (decision = NULL) via Keepa
-  const evalResult = await evaluatePendingBooks();
-
-  // Step 4: Summary
   console.log('\n=== Summary ===');
   console.log(`Scraped: ${totalNew} new, ${totalSkipped} skipped`);
-  console.log(`Evaluated: ${evalResult.evaluated} total`);
-  console.log(`  BUY: ${evalResult.buy}`);
-  console.log(`  REVIEW: ${evalResult.review}`);
-  console.log(`  REJECT: ${evalResult.reject}`);
-  console.log(`  No Keepa data: ${evalResult.noData}`);
+  console.log(`Evaluated: ${totalEval.evaluated} total`);
+  console.log(`  BUY: ${totalEval.buy}`);
+  console.log(`  REVIEW: ${totalEval.review}`);
+  console.log(`  REJECT: ${totalEval.reject}`);
+  console.log(`  No Keepa data: ${totalEval.noData}`);
   console.log('\nDone.');
 }
 

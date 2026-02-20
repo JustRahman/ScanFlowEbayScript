@@ -1,8 +1,69 @@
-export const SELLERS = ['booksrun'];
+interface SellerConfig {
+  ebayName: string;
+  conditionId: string;
+  evalBatchSize: number;
+  searches: { key: string; query: string; categoryId: string; name: string }[];
+}
 
-export const SEARCHES = [
-  { key: 'txt', query: 'textbook', name: 'Textbook' },
-];
+const SELLER_MAP: Record<string, SellerConfig> = {
+  booksrun: {
+    ebayName: 'booksrun',
+    conditionId: '4000', // Very Good
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'edu', query: '', categoryId: '2228', name: 'Textbooks, Education & Reference' },
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  secondsale: {
+    ebayName: 'second.sale',
+    conditionId: '4000', // Very Good
+    evalBatchSize: 500,
+    searches: [
+      { key: 'edu', query: '', categoryId: '2228', name: 'Textbooks, Education & Reference' },
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  thriftbooks: {
+    ebayName: 'thriftbooks.store',
+    conditionId: '3000', // Like New
+    evalBatchSize: 1500,
+    searches: [
+      { key: 'edu', query: '', categoryId: '2228', name: 'Textbooks, Education & Reference' },
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  oneplanetbook: {
+    ebayName: 'oneplanetbooks',
+    conditionId: '3000', // Like New
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'edu', query: '', categoryId: '2228', name: 'Textbooks, Education & Reference' },
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  bwb: {
+    ebayName: 'betterworldbooks',
+    conditionId: '3000', // Like New
+    evalBatchSize: 2000,
+    searches: [
+      { key: 'edu', query: '', categoryId: '2228', name: 'Textbooks, Education & Reference' },
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+};
+
+const sellerKey = process.env.SELLER || 'booksrun';
+const sellerConfig = SELLER_MAP[sellerKey];
+if (!sellerConfig) {
+  console.error(`Unknown SELLER="${sellerKey}". Valid: ${Object.keys(SELLER_MAP).join(', ')}`);
+  process.exit(1);
+}
+
+export const SELLER = sellerConfig.ebayName;
+export const CONDITION_ID = sellerConfig.conditionId;
+export const EVAL_BATCH_SIZE = sellerConfig.evalBatchSize;
+export const SEARCHES = sellerConfig.searches;
 
 // Price range in cents
 export const MIN_PRICE = 400;   // $4.00

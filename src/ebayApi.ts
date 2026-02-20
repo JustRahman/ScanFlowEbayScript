@@ -7,6 +7,7 @@ const OAUTH_SCOPES = 'https://api.ebay.com/oauth/api_scope';
 
 const CLIENT_ID = process.env.EBAY_CLIENT_ID || '';
 const CLIENT_SECRET = process.env.EBAY_CLIENT_SECRET || '';
+const REFRESH_TOKEN = process.env.EBAY_REFRESH_TOKEN || '';
 const EPN_CAMPAIGN_ID = process.env.EPN_CAMPAIGN_ID || '5339135996';
 
 // OAuth token cache
@@ -99,8 +100,13 @@ export async function getOAuthToken(): Promise<string> {
     throw new Error('eBay API credentials not configured (EBAY_CLIENT_ID, EBAY_CLIENT_SECRET)');
   }
 
-  console.log('Fetching eBay OAuth token...');
+  const useRefreshToken = !!REFRESH_TOKEN;
+  console.log(`Fetching eBay OAuth ${useRefreshToken ? 'user' : 'application'} token (${useRefreshToken ? 'refresh_token' : 'client_credentials'} grant)...`);
   const credentials = Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64');
+
+  const body = useRefreshToken
+    ? `grant_type=refresh_token&refresh_token=${encodeURIComponent(REFRESH_TOKEN)}&scope=${encodeURIComponent(OAUTH_SCOPES)}`
+    : `grant_type=client_credentials&scope=${encodeURIComponent(OAUTH_SCOPES)}`;
 
   const response = await fetchWithRetry(
     EBAY_OAUTH_URL,
@@ -110,7 +116,7 @@ export async function getOAuthToken(): Promise<string> {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': `Basic ${credentials}`,
       },
-      body: `grant_type=client_credentials&scope=${encodeURIComponent(OAUTH_SCOPES)}`,
+      body,
     },
     'eBay OAuth'
   );
@@ -254,6 +260,9 @@ export async function scrapeAllListings(
   onPageDone: (books: ScrapedBook[], pageNum: number) => Promise<void>,
   startOffset: number = 0,
   onPageProcessed?: (nextOffset: number) => Promise<void>,
+  categoryId: string = '267',
+  conditionId: string = '4000',
+  maxNewBooks: number = 0,
 ): Promise<{ totalScraped: number; totalWithISBN: number; totalNew: number; detailFetches: number; completed: boolean }> {
   const PAGE_SIZE = 200;
   let offset = startOffset;
@@ -274,7 +283,7 @@ export async function scrapeAllListings(
     `sellers:{${seller}}`,
     `price:[${minPriceDollars}..${maxPriceDollars}]`,
     'priceCurrency:USD',
-    'conditionIds:{4000}',
+    `conditionIds:{${conditionId}}`,
     'buyingOptions:{FIXED_PRICE}',
   ].join(',');
 
@@ -283,14 +292,14 @@ export async function scrapeAllListings(
 
     // Step 1: Search page
     const searchParams: Record<string, string> = {
-      q: searchQuery,
-      category_ids: '267',
+      category_ids: categoryId,
       limit: String(PAGE_SIZE),
       offset: String(offset),
       filter: filters,
       sort: 'newlyListed',
       fieldgroups: 'EXTENDED',
     };
+    if (searchQuery) searchParams.q = searchQuery;
     const params = new URLSearchParams(searchParams);
 
     const searchUrl = `${EBAY_BROWSE_URL}/item_summary/search?${params.toString()}`;
@@ -441,6 +450,12 @@ export async function scrapeAllListings(
 
     // Stop entirely if rate limited
     if (rateLimited) break;
+
+    // Stop if we hit the batch limit
+    if (maxNewBooks > 0 && totalNew >= maxNewBooks) {
+      console.log(`    Batch limit reached (${totalNew} new books), pausing for evaluation...`);
+      break;
+    }
 
     // Stop if we got fewer than a full page (natural end)
     if (items.length < PAGE_SIZE) {

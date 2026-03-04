@@ -20,7 +20,6 @@ export interface EbayBook {
   ebay_url: string;
   image_url: string | null;
   shipping: number;
-  description: string | null;
   scraped_at: string;
   decision: 'BUY' | 'REVIEW' | 'REJECT' | 'BOUGHT' | 'SOLD_OUT' | null;
   asin: string | null;

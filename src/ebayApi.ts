@@ -139,7 +139,6 @@ export interface ScrapedBook {
   ebay_url: string;
   image_url: string | null;
   shipping: number;     // cents
-  description: string | null;
   scraped_at: string;
 }
 
@@ -424,7 +423,6 @@ export async function scrapeAllListings(
         ebay_url: `https://www.ebay.com/itm/${item.itemId}`,
         image_url: item.image?.imageUrl || null,
         shipping: shippingCents,
-        description: detail?.description || null,
         scraped_at: now,
       });
     }

@@ -168,34 +168,6 @@ interface EbayItem {
 
 // ── Access code detection ──
 
-const REJECT_PATTERNS: { pattern: RegExp; reason: string }[] = [
-  // Used access codes
-  { pattern: /access\s*code\s*(?:has\s+been\s+|was\s+|is\s+|may\s+(?:have\s+been\s+|be\s+))?(?:used|redeemed|opened|expired|scratched|missing|not\s+included|unavailable)/i, reason: 'used access code' },
-  { pattern: /(?:used|redeemed|opened|expired|scratched|missing)\s*access\s*code/i, reason: 'used access code' },
-  { pattern: /no\s+access\s*code/i, reason: 'no access code' },
-  { pattern: /code\s+(?:has\s+been\s+|was\s+|is\s+)?(?:used|redeemed|opened|expired)/i, reason: 'used access code' },
-  { pattern: /without\s+(?:the\s+)?(?:access\s*)?code/i, reason: 'no access code' },
-  { pattern: /(?:online|digital)\s+(?:access|code)\s+(?:has\s+been\s+|was\s+|is\s+|may\s+(?:have\s+been\s+|be\s+))?(?:used|redeemed|expired|not\s+included)/i, reason: 'used access code' },
-  // Damage
-  { pattern: /water\s*damage/i, reason: 'water damage' },
-  { pattern: /water\s*stain/i, reason: 'water damage' },
-  { pattern: /mold/i, reason: 'mold' },
-  { pattern: /mildew/i, reason: 'mold' },
-  // Highlighting
-  { pattern: /highlight(?:ed|ing)/i, reason: 'highlighted' },
-  // Missing content
-  { pattern: /missing\s*pages?/i, reason: 'missing pages' },
-  { pattern: /pages?\s*missing/i, reason: 'missing pages' },
-];
-
-function checkDescriptionReject(description: string | null | undefined): string | null {
-  if (!description) return null;
-  const text = description.replace(/<[^>]*>/g, ' ');
-  for (const { pattern, reason } of REJECT_PATTERNS) {
-    if (pattern.test(text)) return reason;
-  }
-  return null;
-}
 
 // ── ISBN validation (checksum) ──
 
@@ -432,29 +404,6 @@ export async function scrapeAllListings(
 
       // Skip if already in DB
       if (existingISBNs.has(isbn)) continue;
-
-      // Fetch full item detail for new books (if not already fetched above)
-      if (!detail) {
-        detailFetches++;
-        try {
-          detail = await fetchItemDetail(item.itemId);
-        } catch (error) {
-          if (error instanceof RateLimitError) {
-            console.log(`\n    eBay rate limit hit — stopping scrape, saving collected books...`);
-            rateLimited = true;
-            break;
-          }
-          throw error;
-        }
-        await sleep(150);
-      }
-
-      // Skip books with red-flag descriptions — no point evaluating
-      const rejectReason = checkDescriptionReject(detail?.description);
-      if (rejectReason) {
-        console.log(`      x ${isbn} — ${rejectReason}, skipping`);
-        continue;
-      }
 
       const priceCents = Math.round(parseFloat(item.price.value) * 100);
       const shippingCents = item.shippingOptions?.[0]?.shippingCost

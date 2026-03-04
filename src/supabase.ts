@@ -20,8 +20,9 @@ export interface EbayBook {
   ebay_url: string;
   image_url: string | null;
   shipping: number;
+  description: string | null;
   scraped_at: string;
-  decision: 'BUY' | 'REVIEW' | 'REJECT' | 'BOUGHT' | null;
+  decision: 'BUY' | 'REVIEW' | 'REJECT' | 'BOUGHT' | 'SOLD_OUT' | null;
   asin: string | null;
   amazon_price: number | null;
   sales_rank: number | null;
@@ -126,7 +127,7 @@ export async function getPendingBooks(seller?: string): Promise<EbayBook[]> {
  * Update a book with evaluation results.
  */
 export async function updateBookEvaluation(isbn: string, evaluation: {
-  decision: 'BUY' | 'REVIEW' | 'REJECT';
+  decision: 'BUY' | 'REVIEW' | 'REJECT' | 'SOLD_OUT';
   asin?: string;
   amazon_price?: number;
   sales_rank?: number;
@@ -154,6 +155,48 @@ export async function updateBookEvaluation(isbn: string, evaluation: {
   }
 
   return true;
+}
+
+/**
+ * Get books with BUY, REVIEW, or REJECT decision for rechecking.
+ * Queries each decision type separately to avoid statement timeout.
+ */
+export async function getBooksForRecheck(seller?: string, includeReject = false): Promise<EbayBook[]> {
+  const all: EbayBook[] = [];
+  const decisions = includeReject ? ['BUY', 'REVIEW', 'REJECT'] as const : ['BUY', 'REVIEW'] as const;
+
+  for (const decision of decisions) {
+    let from = 0;
+    const pageSize = 500;
+    let count = 0;
+
+    while (true) {
+      let query = supabase
+        .from(TABLE)
+        .select('*')
+        .eq('decision', decision)
+        .order('evaluated_at', { ascending: true })
+        .range(from, from + pageSize - 1);
+      if (seller) query = query.eq('seller', seller);
+      const { data, error } = await query;
+
+      if (error) {
+        console.error(`Error fetching ${decision} books (offset ${from}):`, error.message);
+        break;
+      }
+
+      if (!data || data.length === 0) break;
+      all.push(...data);
+      count += data.length;
+      process.stdout.write(`\r  Loading ${decision}: ${count} books...`);
+      if (data.length < pageSize) break;
+      from += pageSize;
+    }
+
+    if (count > 0) console.log(`\r  Loading ${decision}: ${count} books ✓`);
+  }
+
+  return all;
 }
 
 // ── Checkpoint functions for resumable scraping ──

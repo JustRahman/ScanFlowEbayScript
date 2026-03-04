@@ -75,13 +75,13 @@ export const KEEPA_DELAY_MS = 1200;
 export const DECISION = {
   BUY: {
     MULTIPLIER: 6,                // Amazon price >= 6x buy price
-    MAX_SALES_RANK: 1500000,      // Rank < 1.5M
+    MAX_SALES_RANK: 1700000,      // Rank < 1.7M
     MAX_SALES_RANK_CHEAP: 2000000,// Rank < 2M if buy price < $6
     CHEAP_PRICE_THRESHOLD: 6,     // Books under $6 get relaxed rank
     MIN_DROPS_90: 3,              // At least 3 sales in 90 days
     HIGH_PROFIT_MIN_FBM: 60,      // FBM profit >= $60 for high-profit exception
-    HIGH_PROFIT_MAX_RANK: 1000000,// Rank < 1M for high-profit exception
-    HIGH_PROFIT_MIN_DROPS: 10,    // 10+ sales for high-profit exception
+    HIGH_PROFIT_MAX_RANK: 1700000,// Rank < 1.7M for high-profit exception
+    HIGH_PROFIT_MIN_DROPS: 5,     // 5+ sales for high-profit exception
   },
   REVIEW: {
     MULTIPLIER: 4,                // Amazon price >= 4x buy price

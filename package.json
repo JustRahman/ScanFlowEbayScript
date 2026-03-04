@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "tsx src/index.ts",
-    "ebay-auth": "tsx scripts/ebay-auth.ts"
+    "ebay-auth": "tsx scripts/ebay-auth.ts",
+    "recheck": "tsx scripts/recheck.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",

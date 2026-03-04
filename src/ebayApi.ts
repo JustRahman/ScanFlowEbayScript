@@ -8,7 +8,6 @@ const OAUTH_SCOPES = 'https://api.ebay.com/oauth/api_scope';
 const CLIENT_ID = process.env.EBAY_CLIENT_ID || '';
 const CLIENT_SECRET = process.env.EBAY_CLIENT_SECRET || '';
 const REFRESH_TOKEN = process.env.EBAY_REFRESH_TOKEN || '';
-const EPN_CAMPAIGN_ID = process.env.EPN_CAMPAIGN_ID || '5339135996';
 
 // OAuth token cache
 let cachedToken: string | null = null;
@@ -140,6 +139,7 @@ export interface ScrapedBook {
   ebay_url: string;
   image_url: string | null;
   shipping: number;     // cents
+  description: string | null;
   scraped_at: string;
 }
 
@@ -153,7 +153,6 @@ interface EbayItem {
   condition?: string;
   seller?: { username: string };
   itemWebUrl: string;
-  itemAffiliateWebUrl?: string;
   shippingOptions?: Array<{
     shippingCost?: { value: string; currency: string };
   }>;
@@ -164,6 +163,38 @@ interface EbayItem {
   }>;
   isbn?: string[];
   gtin?: string;
+  description?: string;
+}
+
+// ── Access code detection ──
+
+const REJECT_PATTERNS: { pattern: RegExp; reason: string }[] = [
+  // Used access codes
+  { pattern: /access\s*code\s*(?:has\s+been\s+|was\s+|is\s+|may\s+(?:have\s+been\s+|be\s+))?(?:used|redeemed|opened|expired|scratched|missing|not\s+included|unavailable)/i, reason: 'used access code' },
+  { pattern: /(?:used|redeemed|opened|expired|scratched|missing)\s*access\s*code/i, reason: 'used access code' },
+  { pattern: /no\s+access\s*code/i, reason: 'no access code' },
+  { pattern: /code\s+(?:has\s+been\s+|was\s+|is\s+)?(?:used|redeemed|opened|expired)/i, reason: 'used access code' },
+  { pattern: /without\s+(?:the\s+)?(?:access\s*)?code/i, reason: 'no access code' },
+  { pattern: /(?:online|digital)\s+(?:access|code)\s+(?:has\s+been\s+|was\s+|is\s+|may\s+(?:have\s+been\s+|be\s+))?(?:used|redeemed|expired|not\s+included)/i, reason: 'used access code' },
+  // Damage
+  { pattern: /water\s*damage/i, reason: 'water damage' },
+  { pattern: /water\s*stain/i, reason: 'water damage' },
+  { pattern: /mold/i, reason: 'mold' },
+  { pattern: /mildew/i, reason: 'mold' },
+  // Highlighting
+  { pattern: /highlight(?:ed|ing)/i, reason: 'highlighted' },
+  // Missing content
+  { pattern: /missing\s*pages?/i, reason: 'missing pages' },
+  { pattern: /pages?\s*missing/i, reason: 'missing pages' },
+];
+
+function checkDescriptionReject(description: string | null | undefined): string | null {
+  if (!description) return null;
+  const text = description.replace(/<[^>]*>/g, ' ');
+  for (const { pattern, reason } of REJECT_PATTERNS) {
+    if (pattern.test(text)) return reason;
+  }
+  return null;
 }
 
 // ── ISBN validation (checksum) ──
@@ -226,7 +257,7 @@ function extractISBN(item: EbayItem): string | null {
 
 // ── Fetch single item detail (for ISBN extraction when summary doesn't have it) ──
 
-async function fetchItemDetail(itemId: string): Promise<EbayItem | null> {
+export async function fetchItemDetail(itemId: string): Promise<EbayItem | null> {
   const token = await getOAuthToken();
   const url = `${EBAY_BROWSE_URL}/item/${itemId}`;
 
@@ -238,7 +269,7 @@ async function fetchItemDetail(itemId: string): Promise<EbayItem | null> {
         headers: {
           'Authorization': `Bearer ${token}`,
           'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
-          'X-EBAY-C-ENDUSERCTX': `affiliateCampaignId=${EPN_CAMPAIGN_ID},affiliateReferenceId=scanflow`,
+          'X-EBAY-C-ENDUSERCTX': 'contextualLocation=country=US',
         },
       },
       'eBay Item Detail',
@@ -313,7 +344,7 @@ export async function scrapeAllListings(
           headers: {
             'Authorization': `Bearer ${token}`,
             'X-EBAY-C-MARKETPLACE-ID': 'EBAY_US',
-            'X-EBAY-C-ENDUSERCTX': `affiliateCampaignId=${EPN_CAMPAIGN_ID},affiliateReferenceId=scanflow`,
+            'X-EBAY-C-ENDUSERCTX': 'contextualLocation=country=US',
           },
         },
         `eBay Search (page ${pageNum})`,
@@ -364,21 +395,19 @@ export async function scrapeAllListings(
       itemIndex++;
       // Try ISBN from search summary
       let isbn = extractISBN(item);
+      let detail: EbayItem | null = null;
 
       // If summary had ISBN/GTIN fields but they failed validation, skip detail fetch
       // (detail will have the same bad data)
       const summaryHadData = !!(item.isbn?.length || item.gtin);
 
-      // Only fetch detail if summary had NO ISBN-like fields at all
+      // Fetch detail if summary had NO ISBN-like fields at all
       if (!isbn && !summaryHadData) {
         detailFetches++;
         try {
-          const detail = await fetchItemDetail(item.itemId);
+          detail = await fetchItemDetail(item.itemId);
           if (detail) {
             isbn = extractISBN(detail);
-            if (detail.itemAffiliateWebUrl) {
-              item.itemAffiliateWebUrl = detail.itemAffiliateWebUrl;
-            }
           }
         } catch (error) {
           if (error instanceof RateLimitError) {
@@ -404,6 +433,29 @@ export async function scrapeAllListings(
       // Skip if already in DB
       if (existingISBNs.has(isbn)) continue;
 
+      // Fetch full item detail for new books (if not already fetched above)
+      if (!detail) {
+        detailFetches++;
+        try {
+          detail = await fetchItemDetail(item.itemId);
+        } catch (error) {
+          if (error instanceof RateLimitError) {
+            console.log(`\n    eBay rate limit hit — stopping scrape, saving collected books...`);
+            rateLimited = true;
+            break;
+          }
+          throw error;
+        }
+        await sleep(150);
+      }
+
+      // Skip books with red-flag descriptions — no point evaluating
+      const rejectReason = checkDescriptionReject(detail?.description);
+      if (rejectReason) {
+        console.log(`      x ${isbn} — ${rejectReason}, skipping`);
+        continue;
+      }
+
       const priceCents = Math.round(parseFloat(item.price.value) * 100);
       const shippingCents = item.shippingOptions?.[0]?.shippingCost
         ? Math.round(parseFloat(item.shippingOptions[0].shippingCost.value) * 100)
@@ -420,9 +472,10 @@ export async function scrapeAllListings(
         seller,
         category: searchQuery,
         ebay_item_id: item.itemId,
-        ebay_url: item.itemAffiliateWebUrl || `https://www.ebay.com/itm/${item.itemId}?mkcid=1&mkrid=711-53200-19255-0&siteid=0&campid=${EPN_CAMPAIGN_ID}&toolid=10001&customid=scanflow`,
+        ebay_url: `https://www.ebay.com/itm/${item.itemId}`,
         image_url: item.image?.imageUrl || null,
         shipping: shippingCents,
+        description: detail?.description || null,
         scraped_at: now,
       });
     }

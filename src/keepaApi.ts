@@ -63,6 +63,7 @@ export interface KeepaProductRaw {
   binding?: string;
   packageWeight?: number;
   itemWeight?: number;
+  eanList?: string[];
 }
 
 interface KeepaApiResponse {
@@ -225,6 +226,59 @@ export async function getProductByIsbn(isbn: string): Promise<KeepaProductRaw | 
   } catch (error) {
     console.error('Keepa API fetch error:', error);
     return null;
+  }
+}
+
+/**
+ * Batch fetch: up to 100 ISBNs per call, 1 token/book (no offers=20).
+ * Returns products keyed by both ASIN and ISBN for flexible lookup, plus tokensConsumed.
+ */
+export async function getProductsByIsbns(isbns: string[]): Promise<{
+  byAsin: Map<string, KeepaProductRaw>;
+  byIsbn: Map<string, KeepaProductRaw>;
+  tokensConsumed: number;
+}> {
+  const byAsin = new Map<string, KeepaProductRaw>();
+  const byIsbn = new Map<string, KeepaProductRaw>();
+  if (!KEEPA_API_KEY || isbns.length === 0) return { byAsin, byIsbn, tokensConsumed: 0 };
+
+  const cleanIsbns = isbns.map(i => i.replace(/[-\s]/g, ''));
+  const codes = cleanIsbns.join(',');
+  const url = `${KEEPA_API_BASE}/product?key=${KEEPA_API_KEY}&domain=1&code=${codes}&stats=180&history=1`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.error('Keepa batch API error:', response.status);
+      return { byAsin, byIsbn, tokensConsumed: 0 };
+    }
+
+    const data: KeepaApiResponse = await response.json();
+    if (data.error) {
+      console.error('Keepa batch API error:', data.error.message);
+      return { byAsin, byIsbn, tokensConsumed: 0 };
+    }
+
+    console.log(`  Keepa tokens left: ${data.tokensLeft} (consumed: ${data.tokensConsumed})`);
+
+    if (data.products) {
+      for (const product of data.products) {
+        byAsin.set(product.asin, product);
+        // Map ISBN→product using eanList
+        if (product.eanList) {
+          for (const ean of product.eanList) {
+            if (cleanIsbns.includes(ean)) {
+              byIsbn.set(ean, product);
+            }
+          }
+        }
+      }
+    }
+
+    return { byAsin, byIsbn, tokensConsumed: data.tokensConsumed };
+  } catch (error) {
+    console.error('Keepa batch fetch error:', error);
+    return { byAsin, byIsbn, tokensConsumed: 0 };
   }
 }
 

@@ -47,9 +47,9 @@ export async function evaluatePendingBooks(seller?: string): Promise<{
         (book.asin ? byAsin.get(book.asin) : undefined) || byIsbn.get(book.isbn);
 
       if (!product) {
-        await updateBookEvaluation(book.isbn, { decision: 'REJECT' });
+        await updateBookEvaluation(book.isbn, { decision: 'NOT FOUND' });
         noData++;
-        console.log(`  [${evaluated}/${pending.length}] ${book.isbn} — no Keepa data → REJECT`);
+        console.log(`  [${evaluated}/${pending.length}] ${book.isbn} — no Keepa data → NOT FOUND`);
         continue;
       }
 

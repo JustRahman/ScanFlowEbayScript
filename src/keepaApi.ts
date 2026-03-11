@@ -288,6 +288,7 @@ export async function getProductsByIsbns(isbns: string[]): Promise<{
             if (singleData.products) {
               for (const product of singleData.products) {
                 byAsin.set(product.asin, product);
+                if (cleanIsbns.includes(product.asin)) byIsbn.set(product.asin, product);
                 if (product.eanList) {
                   for (const ean of product.eanList) {
                     if (cleanIsbns.includes(ean)) byIsbn.set(ean, product);
@@ -308,6 +309,10 @@ export async function getProductsByIsbns(isbns: string[]): Promise<{
     if (data.products) {
       for (const product of data.products) {
         byAsin.set(product.asin, product);
+        // Map by ASIN too (for books, ASIN = ISBN-10)
+        if (cleanIsbns.includes(product.asin)) {
+          byIsbn.set(product.asin, product);
+        }
         // Map ISBN→product using eanList
         if (product.eanList) {
           for (const ean of product.eanList) {

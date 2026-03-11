@@ -21,7 +21,7 @@ export interface EbayBook {
   image_url: string | null;
   shipping: number;
   scraped_at: string;
-  decision: 'BUY' | 'REVIEW' | 'REJECT' | 'BOUGHT' | 'SOLD_OUT' | null;
+  decision: 'BUY' | 'REVIEW' | 'REJECT' | 'NOT FOUND' | 'BOUGHT' | 'SOLD_OUT' | null;
   asin: string | null;
   amazon_price: number | null;
   sales_rank: number | null;
@@ -126,7 +126,7 @@ export async function getPendingBooks(seller?: string): Promise<EbayBook[]> {
  * Update a book with evaluation results.
  */
 export async function updateBookEvaluation(isbn: string, evaluation: {
-  decision: 'BUY' | 'REVIEW' | 'REJECT' | 'SOLD_OUT';
+  decision: 'BUY' | 'REVIEW' | 'REJECT' | 'NOT FOUND' | 'SOLD_OUT';
   asin?: string;
   amazon_price?: number;
   sales_rank?: number;

@@ -233,6 +233,12 @@ export async function getProductByIsbn(isbn: string): Promise<KeepaProductRaw | 
  * Batch fetch: up to 100 ISBNs per call, 1 token/book (no offers=20).
  * Returns products keyed by both ASIN and ISBN for flexible lookup, plus tokensConsumed.
  */
+function isValidIsbn(code: string): boolean {
+  const c = code.replace(/[-\s]/g, '');
+  return (c.length === 13 && /^\d+$/.test(c)) ||
+         (c.length === 10 && /^\d{9}[\dX]$/.test(c));
+}
+
 export async function getProductsByIsbns(isbns: string[]): Promise<{
   byAsin: Map<string, KeepaProductRaw>;
   byIsbn: Map<string, KeepaProductRaw>;
@@ -242,9 +248,19 @@ export async function getProductsByIsbns(isbns: string[]): Promise<{
   const byIsbn = new Map<string, KeepaProductRaw>();
   if (!KEEPA_API_KEY || isbns.length === 0) return { byAsin, byIsbn, tokensConsumed: 0 };
 
-  const cleanIsbns = isbns.map(i => i.replace(/[-\s]/g, ''));
+  const cleanIsbns = isbns.map(i => i.replace(/[-\s]/g, '')).filter(i => {
+    if (!isValidIsbn(i)) {
+      console.log(`    Skipping invalid ISBN: ${i}`);
+      return false;
+    }
+    return true;
+  });
+  if (cleanIsbns.length === 0) return { byAsin, byIsbn, tokensConsumed: 0 };
+
   const codes = cleanIsbns.join(',');
   const url = `${KEEPA_API_BASE}/product?key=${KEEPA_API_KEY}&domain=1&code=${codes}&stats=180&history=1`;
+
+  let totalConsumed = 0;
 
   try {
     const response = await fetch(url);
@@ -255,7 +271,35 @@ export async function getProductsByIsbns(isbns: string[]): Promise<{
 
     const data: KeepaApiResponse = await response.json();
     if (data.error) {
-      console.error('Keepa batch API error:', data.error.message);
+      const errorMsg = data.error.message || String(data.error);
+      console.error('Keepa batch API error:', errorMsg);
+
+      // Retry one-by-one if batch fails due to invalid product code
+      if (errorMsg.includes('Invalid product code')) {
+        console.log('    Retrying batch one by one...');
+        for (const isbn of cleanIsbns) {
+          try {
+            const singleUrl = `${KEEPA_API_BASE}/product?key=${KEEPA_API_KEY}&domain=1&code=${isbn}&stats=180&history=1`;
+            const singleResp = await fetch(singleUrl);
+            if (!singleResp.ok) continue;
+            const singleData: KeepaApiResponse = await singleResp.json();
+            if (singleData.error) continue;
+            totalConsumed += singleData.tokensConsumed;
+            if (singleData.products) {
+              for (const product of singleData.products) {
+                byAsin.set(product.asin, product);
+                if (product.eanList) {
+                  for (const ean of product.eanList) {
+                    if (cleanIsbns.includes(ean)) byIsbn.set(ean, product);
+                  }
+                }
+              }
+            }
+          } catch { continue; }
+        }
+        return { byAsin, byIsbn, tokensConsumed: totalConsumed };
+      }
+
       return { byAsin, byIsbn, tokensConsumed: 0 };
     }
 

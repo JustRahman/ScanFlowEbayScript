@@ -4,10 +4,42 @@ import { scrapeAllListings } from './ebayApi.js';
 import { getExistingISBNs, insertBooks, getCheckpoint, saveCheckpoint } from './supabase.js';
 import { evaluatePendingBooks } from './evaluate.js';
 
+async function fetchRejectedIsbns(): Promise<Set<string>> {
+  const url = process.env.REJECT_FILE_URL;
+  if (!url) return new Set();
+
+  try {
+    console.log('Fetching rejected ISBNs from remote file...');
+    const resp = await fetch(url, {
+      headers: { 'ngrok-skip-browser-warning': 'true' },
+    });
+    if (!resp.ok) {
+      console.error(`Failed to fetch rejected ISBNs: ${resp.status}`);
+      return new Set();
+    }
+    const text = await resp.text();
+    const isbns = new Set(text.split('\n').map(s => s.trim()).filter(Boolean));
+    console.log(`Loaded ${isbns.size} rejected ISBNs from remote file`);
+    return isbns;
+  } catch (err) {
+    console.error('Could not fetch rejected ISBNs:', err instanceof Error ? err.message : err);
+    return new Set();
+  }
+}
+
 async function main() {
   console.log('=== ScanFlow Fetcher ===\n');
 
-  const existingISBNs = await getExistingISBNs();
+  const [existingISBNs, rejectedISBNs] = await Promise.all([
+    getExistingISBNs(),
+    fetchRejectedIsbns(),
+  ]);
+
+  // Merge rejected ISBNs into existing set for dedup
+  for (const isbn of rejectedISBNs) {
+    existingISBNs.add(isbn);
+  }
+  console.log(`Total dedup ISBNs: ${existingISBNs.size} (${rejectedISBNs.size} from rejected file)`);
   let totalNew = 0;
   let totalSkipped = 0;
   let totalEval = { evaluated: 0, buy: 0, review: 0, reject: 0, noData: 0 };

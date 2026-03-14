@@ -11,8 +11,8 @@ const seller = process.argv[2]; // optional: pass seller name as argument
 // ── Seller URL generation ──
 
 const SELLER_URL_MAP: Record<string, (isbn: string) => string> = {
-  'booksrun': (isbn) => `https://booksrun.com/search/${isbn}`,
-  'second.sale': (isbn) => `https://booksrun.com/search/${isbn}`,
+  'booksrun': (isbn) => `https://booksrun.com/categories?sr=${isbn}`,
+  'second.sale': (isbn) => `https://booksrun.com/categories?sr=${isbn}`,
   'betterworldbooks': (isbn) => `https://www.betterworldbooks.com/product/detail/${isbn}`,
 };
 

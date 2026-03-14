@@ -150,10 +150,13 @@ async function findBestOffer(isbn: string, keepaCondition: number): Promise<Best
     const sellerNames = await resolveSellerNames(sellerIds);
 
     // Build offers with resolved names and prices
+    // offerCSV is flat triplets: [time, price, shipping, time, price, shipping, ...]
     const parsedOffers: { name: string; totalCents: number }[] = [];
     for (const offer of matching) {
-      const price = offer.offerCSV?.[1] ?? -1;
-      const shipping = offer.offerCSV?.[2] ?? 0;
+      const csv = offer.offerCSV;
+      if (!csv || csv.length < 3) continue;
+      const price = csv[csv.length - 2];    // last price
+      const shipping = csv[csv.length - 1]; // last shipping
       if (price <= 0) continue;
 
       const totalCents = price + (shipping > 0 ? shipping : 0);

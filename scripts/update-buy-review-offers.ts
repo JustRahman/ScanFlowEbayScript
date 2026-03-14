@@ -114,10 +114,13 @@ async function findBestOffer(isbn: string, keepaCondition: number): Promise<{ pr
     const sellerIds = [...new Set(matching.map((o: any) => o.sellerId))] as string[];
     const sellerNames = await resolveSellerNames(sellerIds);
 
+    // offerCSV is flat triplets: [time, price, shipping, time, price, shipping, ...]
     const parsedOffers: { name: string; totalCents: number }[] = [];
     for (const offer of matching) {
-      const price = offer.offerCSV?.[1] ?? -1;
-      const shipping = offer.offerCSV?.[2] ?? 0;
+      const csv = offer.offerCSV;
+      if (!csv || csv.length < 3) continue;
+      const price = csv[csv.length - 2];    // last price
+      const shipping = csv[csv.length - 1]; // last shipping
       if (price <= 0) continue;
       parsedOffers.push({
         name: sellerNames[offer.sellerId] || offer.sellerId,

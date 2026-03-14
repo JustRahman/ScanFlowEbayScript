@@ -8,8 +8,8 @@ const KEEPA_BATCH_SIZE = 100;
 // ── Seller URL generation ──
 
 const SELLER_URL_MAP: Record<string, (isbn: string) => string> = {
-  'booksrun': (isbn) => `https://booksrun.com/search/results?q=${isbn}`,
-  'second.sale': (isbn) => `https://booksrun.com/search/results?q=${isbn}`,
+  'booksrun': (isbn) => `https://booksrun.com/search/${isbn}`,
+  'second.sale': (isbn) => `https://booksrun.com/search/${isbn}`,
   'betterworldbooks': (isbn) => `https://www.betterworldbooks.com/product/detail/${isbn}`,
 };
 

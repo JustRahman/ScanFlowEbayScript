@@ -31,6 +31,10 @@ export interface EbayBook {
   amazon_flag: string | null;
   book_type: string | null;
   weight_oz: number | null;
+  seller_url: string | null;
+  amazon_url: string | null;
+  best_offer_price: number | null;
+  best_offer_seller: string | null;
   evaluated_at: string | null;
   bought_at: string | null;
 }
@@ -136,6 +140,10 @@ export async function updateBookEvaluation(isbn: string, evaluation: {
   amazon_flag?: string;
   book_type?: string;
   weight_oz?: number;
+  seller_url?: string;
+  amazon_url?: string;
+  best_offer_price?: number;
+  best_offer_seller?: string;
 }): Promise<boolean> {
   // Strip undefined values to avoid sending nulls for fields we don't want to update
   const cleanEval: Record<string, unknown> = { evaluated_at: new Date().toISOString() };
@@ -246,5 +254,46 @@ export async function resetCheckpoint(seller: string, categoryId: string): Promi
 
   if (error) {
     console.error(`  Checkpoint reset error: ${error.message}`);
+  }
+}
+
+// ── Seller name cache (keepa_sellers table) ──
+
+const SELLER_TABLE = 'keepa_sellers';
+
+export async function getCachedSellerNames(sellerIds: string[]): Promise<Record<string, string>> {
+  const names: Record<string, string> = {};
+  if (sellerIds.length === 0) return names;
+
+  const { data, error } = await supabase
+    .from(SELLER_TABLE)
+    .select('seller_id, seller_name')
+    .in('seller_id', sellerIds);
+
+  if (error) {
+    console.error('Error fetching cached sellers:', error.message);
+    return names;
+  }
+
+  for (const row of data || []) {
+    names[row.seller_id] = row.seller_name;
+  }
+  return names;
+}
+
+export async function cacheSellerNames(sellers: Record<string, string>): Promise<void> {
+  const rows = Object.entries(sellers).map(([seller_id, seller_name]) => ({
+    seller_id,
+    seller_name,
+  }));
+
+  if (rows.length === 0) return;
+
+  const { error } = await supabase
+    .from(SELLER_TABLE)
+    .upsert(rows, { onConflict: 'seller_id' });
+
+  if (error) {
+    console.error('Error caching seller names:', error.message);
   }
 }

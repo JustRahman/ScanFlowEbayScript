@@ -50,6 +50,22 @@ const SELLER_MAP: Record<string, SellerConfig> = {
       { key: 'all', query: '', categoryId: '267', name: 'All Books' },
     ],
   },
+  baystatebooks: {
+    ebayName: 'baystatebooks',
+    conditionId: '2750', // Like New
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'edu', query: '', categoryId: '2228', name: 'Textbooks, Education & Reference' },
+    ],
+  },
+  awesomebooksusa: {
+    ebayName: 'Awesomebooksusa',
+    conditionId: '2750', // Like New
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'edu', query: '', categoryId: '2228', name: 'Textbooks, Education & Reference' },
+    ],
+  },
 };
 
 const sellerKey = process.env.SELLER || 'booksrun';

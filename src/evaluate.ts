@@ -98,6 +98,8 @@ const SELLER_KEEPA_CONDITION: Record<string, number> = {
   'thriftbooks.store': 2, // Like New
   'oneplanetbooks': 2,    // Like New
   'betterworldbooks': 2,  // Like New
+  'baystatebooks': 2,     // Like New
+  'Awesomebooksusa': 2,   // Like New
 };
 
 function getKeepaCondition(seller: string): number {
@@ -127,10 +129,19 @@ async function findBestOffer(isbn: string, keepaCondition: number): Promise<Best
     const product = data.products?.[0];
     if (!product || !product.offers) return null;
 
-    // Filter by matching condition
-    const matching = product.offers.filter((o: any) => o.condition === keepaCondition);
+    // Keepa base time: 2011-01-01 in minutes
+    const KEEPA_BASE = new Date('2011-01-01').getTime();
+    const now = Date.now();
+    const sevenDaysAgo = now - (7 * 24 * 60 * 60 * 1000);
+
+    // Filter by matching condition + seen in last 7 days
+    const matching = product.offers.filter((o: any) => {
+      if (o.condition !== keepaCondition) return false;
+      const lastSeenMs = KEEPA_BASE + (o.lastSeen * 60 * 1000);
+      return lastSeenMs >= sevenDaysAgo;
+    });
     if (matching.length === 0) {
-      console.log(`    No ${condName} offers found`);
+      console.log(`    No recent ${condName} offers found`);
       return null;
     }
 

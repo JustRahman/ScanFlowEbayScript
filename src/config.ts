@@ -13,6 +13,12 @@ const SELLER_MAP: Record<string, SellerConfig> = {
     searches: [
       { key: 'edu', query: '', categoryId: '2228', name: 'Textbooks, Education & Reference' },
       { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+      { key: 'med', query: 'medicine textbook', categoryId: '267', name: 'Medicine Textbooks' },
+      { key: 'biz', query: 'business textbook', categoryId: '267', name: 'Business Textbooks' },
+      { key: 'eng', query: 'engineering textbook', categoryId: '267', name: 'Engineering Textbooks' },
+      { key: 'cs', query: 'computer science', categoryId: '267', name: 'CS Textbooks' },
+      { key: 'math', query: 'mathematics textbook', categoryId: '267', name: 'Math Textbooks' },
+      { key: 'law', query: 'law textbook', categoryId: '267', name: 'Law Textbooks' },
     ],
   },
   secondsale: {
@@ -39,6 +45,12 @@ const SELLER_MAP: Record<string, SellerConfig> = {
     searches: [
       { key: 'edu', query: '', categoryId: '2228', name: 'Textbooks, Education & Reference' },
       { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+      { key: 'med', query: 'medicine textbook', categoryId: '267', name: 'Medicine Textbooks' },
+      { key: 'biz', query: 'business textbook', categoryId: '267', name: 'Business Textbooks' },
+      { key: 'eng', query: 'engineering textbook', categoryId: '267', name: 'Engineering Textbooks' },
+      { key: 'cs', query: 'computer science', categoryId: '267', name: 'CS Textbooks' },
+      { key: 'math', query: 'mathematics textbook', categoryId: '267', name: 'Math Textbooks' },
+      { key: 'law', query: 'law textbook', categoryId: '267', name: 'Law Textbooks' },
     ],
   },
   bwb: {

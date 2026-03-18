@@ -95,12 +95,8 @@ async function resolveSellerNames(sellerIds: string[]): Promise<Record<string, s
 const SELLER_KEEPA_CONDITION: Record<string, number> = {
   'booksrun': 3,          // Very Good
   'second.sale': 3,       // Very Good
-  'thriftbooks.store': 2, // Like New
-  'oneplanetbooks': 2,    // Like New
-  'betterworldbooks': 2,  // Like New
-  'baystatebooks': 2,     // Like New
-  'Awesomebooksusa': 2,   // Like New
 };
+// All other sellers default to Like New (2) via getKeepaCondition()
 
 function getKeepaCondition(seller: string): number {
   return SELLER_KEEPA_CONDITION[seller] ?? 2; // default Like New

@@ -21,61 +21,220 @@ const SELLER_MAP: Record<string, SellerConfig> = {
       { key: 'law', query: 'law textbook', categoryId: '267', name: 'Law Textbooks' },
     ],
   },
+  greatbookprices: {
+    ebayName: 'greatbookprices',
+    conditionId: '2750',
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  greatbookpricesl: {
+    ebayName: 'greatbookpricesl',
+    conditionId: '2750',
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  zuber: {
+    ebayName: 'zuber',
+    conditionId: '2750',
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  rockymtntext: {
+    ebayName: 'rockymtntext',
+    conditionId: '2750',
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  thriftbooks: {
+    ebayName: 'thrift.books',
+    conditionId: '2750',
+    evalBatchSize: 1500,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  bwb: {
+    ebayName: 'betterworldbooks',
+    conditionId: '2750',
+    evalBatchSize: 2000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
   secondsale: {
     ebayName: 'second.sale',
     conditionId: '4000', // Very Good
     evalBatchSize: 500,
     searches: [
-      { key: 'edu', query: '', categoryId: '2228', name: 'Textbooks, Education & Reference' },
       { key: 'all', query: '', categoryId: '267', name: 'All Books' },
     ],
   },
-  thriftbooks: {
-    ebayName: 'thriftbooks.store',
-    conditionId: '2750', // Like New
-    evalBatchSize: 1500,
+  textbooks_source: {
+    ebayName: 'textbooks_source',
+    conditionId: '2750',
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  betterworldbookswest: {
+    ebayName: 'betterworldbookswest',
+    conditionId: '2750',
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  zoombookscompany: {
+    ebayName: 'zoombookscompany',
+    conditionId: '2750',
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  goodwillbks: {
+    ebayName: 'goodwillbks',
+    conditionId: '2750',
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  greenworldbooks: {
+    ebayName: 'greenworldbooks',
+    conditionId: '2750',
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  baystatebooks: {
+    ebayName: 'baystatebooks',
+    conditionId: '2750',
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  goodwillrs: {
+    ebayName: 'goodwillrs',
+    conditionId: '2750',
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  seattlegoodwillbooks: {
+    ebayName: 'seattlegoodwillbooks',
+    conditionId: '2750',
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  clickgoodwillbooks: {
+    ebayName: 'clickgoodwillbooks',
+    conditionId: '2750',
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  ontimebooks: {
+    ebayName: 'ontimebooks',
+    conditionId: '2750',
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  awesomebooksusa: {
+    ebayName: 'Awesomebooksusa',
+    conditionId: '2750',
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  goodwillsoutherncaliforn: {
+    ebayName: 'goodwillsoutherncaliforn',
+    conditionId: '2750',
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  goodbooksco: {
+    ebayName: 'goodbooksco',
+    conditionId: '2750',
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  zebrasbooks2: {
+    ebayName: 'zebrasbooks-2',
+    conditionId: '2750',
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  zbkbooks: {
+    ebayName: 'zbkbooks',
+    conditionId: '2750',
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  goodwillcoloradosprings: {
+    ebayName: 'goodwillcoloradosprings',
+    conditionId: '2750',
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  goodwill_colorado_springs: {
+    ebayName: 'goodwill_colorado_springs',
+    conditionId: '2750',
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  bluevasemarketplace: {
+    ebayName: 'bluevasemarketplace',
+    conditionId: '2750',
+    evalBatchSize: 1000,
     searches: [
       { key: 'all', query: '', categoryId: '267', name: 'All Books' },
     ],
   },
   oneplanetbook: {
     ebayName: 'oneplanetbooks',
-    conditionId: '2750', // Like New
+    conditionId: '2750',
     evalBatchSize: 1000,
     searches: [
-      { key: 'edu', query: '', categoryId: '2228', name: 'Textbooks, Education & Reference' },
-      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
-      { key: 'med', query: 'medicine textbook', categoryId: '267', name: 'Medicine Textbooks' },
-      { key: 'biz', query: 'business textbook', categoryId: '267', name: 'Business Textbooks' },
-      { key: 'eng', query: 'engineering textbook', categoryId: '267', name: 'Engineering Textbooks' },
-      { key: 'cs', query: 'computer science', categoryId: '267', name: 'CS Textbooks' },
-      { key: 'math', query: 'mathematics textbook', categoryId: '267', name: 'Math Textbooks' },
-      { key: 'law', query: 'law textbook', categoryId: '267', name: 'Law Textbooks' },
-    ],
-  },
-  bwb: {
-    ebayName: 'betterworldbooks',
-    conditionId: '2750', // Like New
-    evalBatchSize: 2000,
-    searches: [
-      { key: 'edu', query: '', categoryId: '2228', name: 'Textbooks, Education & Reference' },
       { key: 'all', query: '', categoryId: '267', name: 'All Books' },
     ],
   },
-  baystatebooks: {
-    ebayName: 'baystatebooks',
-    conditionId: '2750', // Like New
+  aplusbooks: {
+    ebayName: 'A plus books',
+    conditionId: '2750',
     evalBatchSize: 1000,
     searches: [
-      { key: 'edu', query: '', categoryId: '2228', name: 'Textbooks, Education & Reference' },
-    ],
-  },
-  awesomebooksusa: {
-    ebayName: 'Awesomebooksusa',
-    conditionId: '2750', // Like New
-    evalBatchSize: 1000,
-    searches: [
-      { key: 'edu', query: '', categoryId: '2228', name: 'Textbooks, Education & Reference' },
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
     ],
   },
 };

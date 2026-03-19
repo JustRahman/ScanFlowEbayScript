@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
-import { writeFileSync } from 'fs';
+import { writeFileSync, readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -47,9 +47,27 @@ async function main() {
     if (count > 0) console.log(`\r  ${decision}: ${count} ISBNs`);
   }
 
-  console.log(`\nTotal: ${isbns.length} ISBNs`);
+  // Load existing file and merge
+  const existing = new Set<string>();
+  if (existsSync(OUTPUT_FILE)) {
+    const content = readFileSync(OUTPUT_FILE, 'utf-8');
+    for (const line of content.split('\n')) {
+      const trimmed = line.trim();
+      if (trimmed) existing.add(trimmed);
+    }
+    console.log(`\nExisting file: ${existing.size} ISBNs`);
+  }
 
-  writeFileSync(OUTPUT_FILE, isbns.join('\n') + '\n');
+  // Merge new ISBNs
+  for (const isbn of isbns) {
+    existing.add(isbn);
+  }
+
+  const allIsbns = [...existing];
+  const newCount = allIsbns.length - (existing.size - isbns.filter(i => !existing.has(i)).length);
+  console.log(`New from DB: ${isbns.length}, merged total: ${allIsbns.length}`);
+
+  writeFileSync(OUTPUT_FILE, allIsbns.join('\n') + '\n');
   console.log(`Saved to ${OUTPUT_FILE}`);
 }
 

@@ -156,6 +156,7 @@ async function main() {
         .from('ebay_books')
         .select('*')
         .eq('decision', decision)
+        .is('best_offer_price', null)
         .range(from, from + pageSize - 1);
       if (seller) query = query.eq('seller', seller);
       const { data, error } = await query;

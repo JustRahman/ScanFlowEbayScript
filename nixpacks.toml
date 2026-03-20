@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["nodejs_18", "npm-9_x"]
+
+[phases.install]
+cmds = ["cd /app/JustRahman-ScanFlowEbayScript-* && npm i"]
+
+[start]
+cmd = "cd /app/JustRahman-ScanFlowEbayScript-* && npx tsx src/index.ts"

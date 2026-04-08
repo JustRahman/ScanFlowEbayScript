@@ -22,7 +22,7 @@ const SELLER_MAP: Record<string, SellerConfig> = {
     ],
   },
   greatbookprices: {
-    ebayName: 'greatbookprices',
+    ebayName: 'greatbookprices1',
     conditionId: '2750',
     evalBatchSize: 1000,
     searches: [
@@ -30,7 +30,7 @@ const SELLER_MAP: Record<string, SellerConfig> = {
     ],
   },
   greatbookpricesl: {
-    ebayName: 'greatbookpricesl',
+    ebayName: 'greatbookprices2',
     conditionId: '2750',
     evalBatchSize: 1000,
     searches: [
@@ -231,6 +231,22 @@ const SELLER_MAP: Record<string, SellerConfig> = {
   },
   aplusbooks: {
     ebayName: 'A plus books',
+    conditionId: '2750',
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  goodwillswpa: {
+    ebayName: 'goodwillswpa',
+    conditionId: '2750',
+    evalBatchSize: 1000,
+    searches: [
+      { key: 'all', query: '', categoryId: '267', name: 'All Books' },
+    ],
+  },
+  worldofbooksinc: {
+    ebayName: 'worldofbooksinc',
     conditionId: '2750',
     evalBatchSize: 1000,
     searches: [

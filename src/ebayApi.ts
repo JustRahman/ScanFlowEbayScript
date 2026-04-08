@@ -1,4 +1,3 @@
-import { MIN_PRICE, MAX_PRICE } from './config.js';
 
 const EBAY_API_BASE = 'https://api.ebay.com';
 const EBAY_OAUTH_URL = `${EBAY_API_BASE}/identity/v1/oauth2/token`;
@@ -280,12 +279,8 @@ export async function scrapeAllListings(
 
   const token = await getOAuthToken();
 
-  const minPriceDollars = (MIN_PRICE / 100).toFixed(2);
-  const maxPriceDollars = (MAX_PRICE / 100).toFixed(2);
-
   const filters = [
     `sellers:{${seller}}`,
-    `price:[${minPriceDollars}..${maxPriceDollars}]`,
     'priceCurrency:USD',
     `conditionIds:{${conditionId}}`,
     'buyingOptions:{FIXED_PRICE}',

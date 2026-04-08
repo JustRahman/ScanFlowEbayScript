@@ -1,48 +1,18 @@
 import 'dotenv/config';
 import { SELLER, CONDITION_ID, EVAL_BATCH_SIZE, SEARCHES } from './config.js';
 import { scrapeAllListings } from './ebayApi.js';
-import { getExistingISBNs, insertBooks, getCheckpoint, saveCheckpoint } from './supabase.js';
+import { getExistingBooks, insertBooks, updateBookPrice, getCheckpoint, saveCheckpoint } from './supabase.js';
 import { evaluatePendingBooks } from './evaluate.js';
-
-async function fetchRejectedIsbns(): Promise<Set<string>> {
-  const url = process.env.REJECT_FILE_URL;
-  if (!url) return new Set();
-
-  try {
-    console.log('Fetching rejected ISBNs from remote file...');
-    const resp = await fetch(url, {
-      headers: { 'ngrok-skip-browser-warning': 'true' },
-    });
-    if (!resp.ok) {
-      console.error(`Failed to fetch rejected ISBNs: ${resp.status}`);
-      return new Set();
-    }
-    const text = await resp.text();
-    const isbns = new Set(text.split('\n').map(s => s.trim()).filter(Boolean));
-    console.log(`Loaded ${isbns.size} rejected ISBNs from remote file`);
-    return isbns;
-  } catch (err) {
-    console.error('Could not fetch rejected ISBNs:', err instanceof Error ? err.message : err);
-    return new Set();
-  }
-}
 
 async function main() {
   console.log('=== ScanFlow Fetcher ===\n');
 
-  const [existingISBNs, rejectedISBNs] = await Promise.all([
-    getExistingISBNs(),
-    fetchRejectedIsbns(),
-  ]);
+  const existingBooks = await getExistingBooks();
 
-  // Merge rejected ISBNs into existing set for dedup
-  for (const isbn of rejectedISBNs) {
-    existingISBNs.add(isbn);
-  }
-  console.log(`Total dedup ISBNs: ${existingISBNs.size} (${rejectedISBNs.size} from rejected file)`);
   let totalNew = 0;
+  let totalUpdated = 0;
   let totalSkipped = 0;
-  let totalEval = { evaluated: 0, buy: 0, review: 0, reject: 0, noData: 0 };
+  let totalEval = { evaluated: 0, buy: 0, review: 0, reject: 0, noData: 0, noDrops: 0, badRank: 0 };
 
   console.log(`\nSeller: ${SELLER} (condition: ${CONDITION_ID}, eval every ${EVAL_BATCH_SIZE} new books)`);
 
@@ -63,7 +33,7 @@ async function main() {
         const result = await scrapeAllListings(
           SELLER,
           search.query,
-          existingISBNs,
+          existingBooks,
           async (books) => {
             const insertResult = await insertBooks(books);
             console.log(`      → Inserted ${insertResult.saved}, ${insertResult.duplicates} dups, ${insertResult.errors} errors`);
@@ -78,9 +48,18 @@ async function main() {
           search.categoryId,
           CONDITION_ID,
           EVAL_BATCH_SIZE,
+          async (updates) => {
+            for (const upd of updates) {
+              const ok = await updateBookPrice(upd.isbn, upd.seller, upd.newPrice, upd.newShipping);
+              if (ok) {
+                totalUpdated++;
+                batchNew++; // count as new work to trigger evaluation
+              }
+            }
+          },
         );
 
-        console.log(`    Batch: ${result.totalScraped} scraped, ${result.totalNew} new`);
+        console.log(`    Batch: ${result.totalScraped} scraped, ${result.totalNew} new, ${result.totalUpdated} price drops`);
 
         if (result.completed) {
           console.log(`    ${search.name} — reached end of results`);
@@ -96,6 +75,8 @@ async function main() {
           totalEval.review += evalResult.review;
           totalEval.reject += evalResult.reject;
           totalEval.noData += evalResult.noData;
+          totalEval.noDrops += evalResult.noDrops;
+          totalEval.badRank += evalResult.badRank;
           console.log(`    --- Eval done: ${evalResult.buy} BUY, ${evalResult.review} REVIEW, ${evalResult.reject} REJECT ---\n`);
         } else {
           searchDone = true;
@@ -108,11 +89,14 @@ async function main() {
   }
 
   console.log('\n=== Summary ===');
-  console.log(`Scraped: ${totalNew} new, ${totalSkipped} skipped`);
+  console.log(`Scraped: ${totalNew} new, ${totalUpdated} price drops, ${totalSkipped} skipped`);
   console.log(`Evaluated: ${totalEval.evaluated} total`);
   console.log(`  BUY: ${totalEval.buy}`);
   console.log(`  REVIEW: ${totalEval.review}`);
   console.log(`  REJECT: ${totalEval.reject}`);
+  console.log(`    No drops (90d): ${totalEval.noDrops}`);
+  console.log(`    Bad rank: ${totalEval.badRank}`);
+  console.log(`    Other: ${totalEval.reject - totalEval.noDrops - totalEval.badRank}`);
   console.log(`  No Keepa data: ${totalEval.noData}`);
   console.log('\nDone.');
 }

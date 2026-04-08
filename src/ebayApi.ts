@@ -258,20 +258,22 @@ export async function fetchItemDetail(itemId: string): Promise<EbayItem | null> 
 export async function scrapeAllListings(
   seller: string,
   searchQuery: string,
-  existingISBNs: Set<string>,
+  existingBooks: Map<string, number>,
   onPageDone: (books: ScrapedBook[], pageNum: number) => Promise<void>,
   startOffset: number = 0,
   onPageProcessed?: (nextOffset: number) => Promise<void>,
   categoryId: string = '267',
   conditionId: string = '4000',
   maxNewBooks: number = 0,
-): Promise<{ totalScraped: number; totalWithISBN: number; totalNew: number; detailFetches: number; completed: boolean }> {
+  onPriceUpdates?: (updates: { isbn: string; seller: string; newPrice: number; newShipping: number }[]) => Promise<void>,
+): Promise<{ totalScraped: number; totalWithISBN: number; totalNew: number; totalUpdated: number; detailFetches: number; completed: boolean }> {
   const PAGE_SIZE = 200;
   let offset = startOffset;
   let pageNum = startOffset / PAGE_SIZE;
   let totalScraped = 0;
   let totalWithISBN = 0;
   let totalNew = 0;
+  let totalUpdated = 0;
   let detailFetches = 0;
   let consecutiveErrors = 0;
   let completed = false;
@@ -358,6 +360,7 @@ export async function scrapeAllListings(
     // then fetch individual item detail if needed
     const now = new Date().toISOString();
     const booksFromPage: ScrapedBook[] = [];
+    const priceUpdatesFromPage: { isbn: string; seller: string; newPrice: number; newShipping: number }[] = [];
 
     let itemIndex = 0;
     let skippedNoIsbn = 0;
@@ -401,13 +404,23 @@ export async function scrapeAllListings(
         continue;
       }
 
-      // Skip if already in DB
-      if (existingISBNs.has(isbn)) continue;
-
       const priceCents = Math.round(parseFloat(item.price.value) * 100);
       const shippingCents = item.shippingOptions?.[0]?.shippingCost
         ? Math.round(parseFloat(item.shippingOptions[0].shippingCost.value) * 100)
         : 0;
+
+      const pairKey = `${isbn}::${seller}`;
+      const existingPrice = existingBooks.get(pairKey);
+
+      if (existingPrice !== undefined) {
+        if (priceCents < existingPrice) {
+          // Price dropped — re-evaluate regardless of current decision
+          console.log(`      ~ ${isbn} | price dropped: $${(existingPrice/100).toFixed(2)} → $${(priceCents/100).toFixed(2)}`);
+          priceUpdatesFromPage.push({ isbn, seller, newPrice: priceCents, newShipping: shippingCents });
+        }
+        // Same or higher price — skip
+        continue;
+      }
 
       const condition = item.condition || 'Very Good';
       console.log(`      + ${isbn} | $${(priceCents/100).toFixed(2)} + $${(shippingCents/100).toFixed(2)} ship | ${condition} | ${item.title.substring(0, 50)}`);
@@ -427,18 +440,24 @@ export async function scrapeAllListings(
       });
     }
 
-    const isbnCount = booksFromPage.length + items.filter(i => existingISBNs.has(extractISBN(i) || '')).length;
-    totalWithISBN += isbnCount;
+    totalWithISBN += booksFromPage.length + priceUpdatesFromPage.length;
     totalNew += booksFromPage.length;
+    totalUpdated += priceUpdatesFromPage.length;
 
     process.stdout.write(`\r`);
-    console.log(`    Page ${pageNum}: ${items.length} listings, ${detailFetches} detail fetches, ${booksFromPage.length} new books`);
+    console.log(`    Page ${pageNum}: ${items.length} listings, ${detailFetches} detail fetches, ${booksFromPage.length} new, ${priceUpdatesFromPage.length} price drops`);
 
-    // Step 3: Insert this page's books immediately
+    // Step 3: Insert new books + handle price drops
     if (booksFromPage.length > 0) {
       await onPageDone(booksFromPage, pageNum);
       for (const book of booksFromPage) {
-        existingISBNs.add(book.isbn);
+        existingBooks.set(`${book.isbn}::${book.seller}`, book.price);
+      }
+    }
+    if (priceUpdatesFromPage.length > 0 && onPriceUpdates) {
+      await onPriceUpdates(priceUpdatesFromPage);
+      for (const upd of priceUpdatesFromPage) {
+        existingBooks.set(`${upd.isbn}::${upd.seller}`, upd.newPrice);
       }
     }
 
@@ -466,5 +485,5 @@ export async function scrapeAllListings(
     await sleep(300);
   }
 
-  return { totalScraped, totalWithISBN, totalNew, detailFetches, completed };
+  return { totalScraped, totalWithISBN, totalNew, totalUpdated, detailFetches, completed };
 }

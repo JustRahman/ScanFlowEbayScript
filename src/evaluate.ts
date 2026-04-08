@@ -1,5 +1,6 @@
 import { getProductsByIsbns, evaluateBook, waitForKeepaTokens, type KeepaProductRaw } from './keepaApi.js';
 import { getPendingBooks, updateBookEvaluation, getCachedSellerNames, cacheSellerNames } from './supabase.js';
+import { DECISION } from './config.js';
 
 const KEEPA_API_KEY = process.env.KEEPA_API_KEY || '';
 const KEEPA_API_BASE = 'https://api.keepa.com';
@@ -187,6 +188,8 @@ export async function evaluatePendingBooks(seller?: string): Promise<{
   review: number;
   reject: number;
   noData: number;
+  noDrops: number;
+  badRank: number;
 }> {
   const pending = await getPendingBooks(seller);
   console.log(`\nEvaluating ${pending.length} pending books...`);
@@ -196,6 +199,8 @@ export async function evaluatePendingBooks(seller?: string): Promise<{
   let review = 0;
   let reject = 0;
   let noData = 0;
+  let noDrops = 0;
+  let badRank = 0;
 
   const safeInt = (v: number | null | undefined): number | undefined => {
     if (v == null || !Number.isFinite(v)) return undefined;
@@ -286,11 +291,15 @@ export async function evaluatePendingBooks(seller?: string): Promise<{
 
       if (result.decision === 'BUY') buy++;
       else if (result.decision === 'REVIEW') review++;
-      else reject++;
+      else {
+        reject++;
+        if (result.salesRankDrops90 === 0) noDrops++;
+        else if (result.salesRank != null && result.salesRank > DECISION.KNOCKOUT.MAX_SALES_RANK) badRank++;
+      }
 
       console.log(`  [${evaluated}/${pending.length}] ${book.isbn} → ${result.decision} (${result.reason})`);
     }
   }
 
-  return { evaluated, buy, review, reject, noData };
+  return { evaluated, buy, review, reject, noData, noDrops, badRank };
 }

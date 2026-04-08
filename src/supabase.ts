@@ -40,32 +40,55 @@ export interface EbayBook {
 }
 
 /**
- * Load all existing ISBNs from DB (paginated) into a Set for dedup.
+ * Load all existing isbn::seller pairs from DB into a Map for dedup.
+ * Map value is the stored price (cents). Skip if same/higher price seen again;
+ * re-evaluate only if price dropped.
  */
-export async function getExistingISBNs(): Promise<Set<string>> {
-  const isbns = new Set<string>();
+export async function getExistingBooks(): Promise<Map<string, number>> {
+  const books = new Map<string, number>();
   let from = 0;
   const pageSize = 1000;
 
   while (true) {
     const { data, error } = await supabase
       .from(TABLE)
-      .select('isbn')
+      .select('isbn, seller, price')
+      .order('id', { ascending: true })
       .range(from, from + pageSize - 1);
 
     if (error) {
-      console.error(`Error loading existing ISBNs:`, error.message);
+      console.error(`Error loading existing books:`, error.message);
       break;
     }
 
     if (!data || data.length === 0) break;
-    data.forEach((row: { isbn: string }) => isbns.add(row.isbn));
+    for (const row of data as { isbn: string; seller: string; price: number }[]) {
+      books.set(`${row.isbn}::${row.seller}`, row.price);
+    }
     from += pageSize;
     if (data.length < pageSize) break;
   }
 
-  console.log(`Loaded ${isbns.size} existing ISBNs from DB`);
-  return isbns;
+  console.log(`Loaded ${books.size} existing isbn::seller pairs from DB`);
+  return books;
+}
+
+/**
+ * Update price/shipping for an existing book and reset decision to null for re-evaluation.
+ */
+export async function updateBookPrice(isbn: string, seller: string, newPrice: number, newShipping: number): Promise<boolean> {
+  const { error } = await supabase
+    .from(TABLE)
+    .update({ price: newPrice, shipping: newShipping, decision: null, scraped_at: new Date().toISOString() })
+    .eq('isbn', isbn)
+    .eq('seller', seller);
+
+  if (error) {
+    console.error(`  Price update error for ${isbn}::${seller}: ${error.message}`);
+    return false;
+  }
+
+  return true;
 }
 
 /**
